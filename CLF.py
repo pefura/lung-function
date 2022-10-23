@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
+
 # App title
 st.write("""
 # Wellcome to Cameroonian's lung function  calculator App
@@ -15,23 +16,27 @@ st.write(""" ### Reference of Article used
 """)
 
 # Define user's input parameters
+
 st.write(""" 
-## Confirmed patient's data
+### Patients Input Parameters(please select patients features here)
 """)
-st.sidebar.header('User Input Parameters(please select patients features here)')
-age = st.sidebar.number_input('age, years', 4.0, 89.0)
-gender = st.sidebar.number_input('gender (Male=1, Female=2)',  1, 2)
-height = st.sidebar.number_input('height, cm', 103.0,196.0 )
-FEV1_measured = st.sidebar.number_input('FEV1_measured, L', 0.0, 15.0 )
-FVC_measured = st.sidebar.number_input('FVC_measured, L', 0.0, 15.0)
-FEV1FVC_measured = st.sidebar.number_input('FEV1FVC_measured, L', 0.0, 1.0)
-FEF2575_measured = st.sidebar.number_input('FEF2575_measured, L', 0.0, 15.0)
+age = st.number_input('age, years', 4.0, 89.0)
+gender = st.number_input('gender (Male=1, Female=2)',  1, 2)
+height = st.number_input('height, cm', 103.0,196.0 )
+FEV1_measured = st.number_input('FEV1_measured, L', 0.0, 15.0 )
+FVC_measured = st.number_input('FVC_measured, L', 0.0, 15.0)
+FEV1FVC_measured = st.number_input('FEV1FVC_measured, L', 0.0, 1.0)
+FEF2575_measured = st.number_input('FEF2575_measured, L', 0.0, 15.0)
+
+st.write(""" 
+### Confirmed patient's data
+""")
 
 df = pd.DataFrame([round(age,2), gender, height, FEV1_measured, FVC_measured, FEV1FVC_measured,FEF2575_measured]).T.set_axis(['Age', 'Gender', 'Height', 'FEV1 measured,L', 'FVC measured,L', 'FEV1/FVC measured','FEF2575 measured,L/s'], axis='columns')
 st.write(df)
 
 # Import Splines lookup table
-lookup= pd.read_csv("https://raw.githubusercontent.com/pefura/lung-function/main/lookup_py.csv", sep=';')
+lookup= pd.read_csv("C:/Users/DDD/Documents/Cameroon_lung_function/R_development/lookup_py.csv", sep=';')
 
 # Function to calculate spirometric parameters
 def spirometric_parameters(age, gender, height, FEV1_measured=0, FVC_measured=0, FEV1FVC_measured=0,
@@ -203,7 +208,7 @@ def spirometric_parameters(age, gender, height, FEV1_measured=0, FVC_measured=0,
 
 
 st.write(""" 
-## Spirometric indices
+### Spirometric indices
 """)
 
 spiro = spirometric_parameters(age=age, gender= gender, height=height, FEV1_measured=FEV1_measured, FVC_measured=FVC_measured,FEV1FVC_measured= FEV1FVC_measured,
@@ -211,4 +216,4 @@ spiro = spirometric_parameters(age=age, gender= gender, height=height, FEV1_meas
 spiro = np.array(spiro).reshape(4,5)
 spiro_df = pd.DataFrame(spiro).set_axis(['Measured', 'Predicted', 'LLN', 'Z-score', '%Predicted'], axis='columns')
 spiro_df = spiro_df.rename(index={0: "FEV1,L", 1:"FVC,L", 2:"FEV1/FVC", 3:"FEF25-75%,L/s"})
-spiro_df
+st.write(spiro_df)
