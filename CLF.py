@@ -36,7 +36,7 @@ df = pd.DataFrame([round(age,2), gender, height, FEV1_measured, FVC_measured, FE
 st.write(df)
 
 # Import Splines lookup table
-lookup= pd.read_csv("C:/Users/DDD/Documents/Cameroon_lung_function/R_development/lookup_py.csv", sep=';')
+lookup= pd.read_csv("https://raw.githubusercontent.com/pefura/lung-function/main/lookup_py.csv", sep=';')
 
 # Function to calculate spirometric parameters
 def spirometric_parameters(age, gender, height, FEV1_measured=0, FVC_measured=0, FEV1FVC_measured=0,
