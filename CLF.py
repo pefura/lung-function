@@ -25,10 +25,10 @@ st.write("""
 age = st.number_input('age, years', 4.0, 89.0)
 gender = st.number_input('gender (Male=1, Female=2)',  1, 2)
 height = st.number_input('height, cm', 103.0,196.0 )
-FEV1_measured = st.number_input('FEV1_measured, L', 0.0, 15.0 )
-FVC_measured = st.number_input('FVC_measured, L', 0.0, 15.0)
-FEV1FVC_measured = st.number_input('FEV1FVC_measured, L', 0.0, 1.0)
-FEF2575_measured = st.number_input('FEF2575_measured, L', 0.0, 15.0)
+FEV1_measured = st.number_input('FEV1 measured, L', 0.0, 15.0 )
+FVC_measured = st.number_input('FVC measured, L', 0.0, 15.0)
+FEV1FVC_measured = st.number_input('FEV1/FVC measured, L', 0.0, 1.0)
+FEF2575_measured = st.number_input('FEF25-75% measured, L', 0.0, 15.0)
 
 st.write(""" 
 ### Confirmed patient's data
