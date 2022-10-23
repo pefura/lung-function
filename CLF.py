@@ -217,6 +217,7 @@ spiro = np.array(spiro).reshape(4,5)
 spiro_df = pd.DataFrame(spiro).set_axis(['Measured', 'Predicted', 'LLN', 'Z-score', '%Predicted'], axis='columns')
 spiro_df = spiro_df.rename(index={0: "FEV1,L", 1:"FVC,L", 2:"FEV1/FVC", 3:"FEF25-75%,L/s"})
 st.write(spiro_df)
-st.write(""" 
-#### FEV1 = forced expiratory volume in 1s ; FVC = forced vital capacity; FEV1/FVC = FEV1/FVC ratio; FEF25-75% = forced mid-expiratory flow; LLN = lower limit of normal
+st.text(""" FEV1 = forced expiratory volume in 1s ; FVC = forced vital capacity; 
+FEV1/FVC = FEV1/FVC ratio; FEF25-75% = forced mid-expiratory flow; 
+LLN = lower limit of normal
 """)
