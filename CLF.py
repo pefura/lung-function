@@ -4,7 +4,7 @@ import numpy as np
 import streamlit as st
 
 st.set_page_config(
-    layout="centered", page_icon="random"
+    layout="centered", page_icon="![image.png](attachment:image.png)"
 )
 # App title
 st.write("""
