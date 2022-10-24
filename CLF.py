@@ -4,8 +4,9 @@ import numpy as np
 import streamlit as st
 
 st.set_page_config(
-    layout="centered", page_icon= "random"
+    layout="centered", page_icon="random",
 )
+
 # App title
 st.write("""
 # Wellcome to Cameroonian's lung function  calculator App
@@ -23,12 +24,12 @@ st.write("""
 ### Patients Input Parameters(please select patients features here)
 """)
 age = st.number_input('age, years', 4.0, 89.0)
-gender = st.number_input('gender (Male=1, Female=2)',  1, 2)
+gender = st.selectbox('gender',  ("Male", "Female"))
 height = st.number_input('height, cm', 103.0,196.0 )
 FEV1_measured = st.number_input('FEV1 measured, L', 0.0, 15.0 )
 FVC_measured = st.number_input('FVC measured, L', 0.0, 15.0)
-FEV1FVC_measured = st.number_input('FEV1/FVC measured, L', 0.0, 1.0)
-FEF2575_measured = st.number_input('FEF25-75% measured, L', 0.0, 15.0)
+FEV1FVC_measured = st.number_input('FEV1/FVC measured', 0.0, 1.0)
+FEF2575_measured = st.number_input('FEF2575 measured, L', 0.0, 15.0)
 
 st.write(""" 
 ### Confirmed patient's data
@@ -38,7 +39,7 @@ df = pd.DataFrame([round(age,2), gender, height, FEV1_measured, FVC_measured, FE
 st.write(df)
 
 # Import Splines lookup table
-lookup= pd.read_csv("https://raw.githubusercontent.com/pefura/lung-function/main/lookup_py.csv", sep=';')
+lookup= pd.read_csv("https://raw.githubusercontent.com/pefura/lung-function/main/lookup_py_1.csv", sep=';')
 
 # Function to calculate spirometric parameters
 def spirometric_parameters(age, gender, height, FEV1_measured=0, FVC_measured=0, FEV1FVC_measured=0,
