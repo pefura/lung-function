@@ -1,0 +1,101 @@
+library(gamlss)
+library(pbapply)
+
+set.seed(123)
+
+# 1. Split data
+n <- nrow(mm)
+train_idx <- sample(seq_len(n), size = floor(0.8 * n))
+train_data <- mm[train_idx, ]
+test_data  <- mm[-train_idx, ]
+
+# 2. Define models (mu = M, sigma = S, nu = L (skewness parameter))
+model_list <- list(
+  list(mu = neg_xrs_5_tot ~ log(taille) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "log(taille) + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ log(taille) + log(poids) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "log(taille) + log(poids) + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ pb(log(taille)) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "pb(log(taille)) + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ pb(log(taille)) + pb(log(poids)) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "pb(log(taille)) + pb(log(poids)) + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ log(taille) + log(poids) + log(age), sigma = ~ 1, nu = ~ 1, desc = "log(taille) + log(poids) + log(age)"),
+  list(mu = neg_xrs_5_tot ~ taille + poids + log(age), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + poids + log(age)"),
+  list(mu = neg_xrs_5_tot ~ taille + poids + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + poids + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ taille + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ poids + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "poids + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ pb(taille) + pb(age), sigma = ~ pb(age), nu = ~ 1, desc = "pb(taille) + pb(age)"),
+  list(mu = neg_xrs_5_tot ~ pb(taille) + pb(poids) + pb(age), sigma = ~ pb(age), nu = ~ 1, desc = "pb(taille) + pb(poids) + pb(age)"),
+  list(mu = neg_xrs_5_tot ~ taille + poids + age, sigma = ~ 1, nu = ~ 1, desc = "taille + poids + age"),
+  list(mu = neg_xrs_5_tot ~ log(taille) + poids + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "log(taille) + poids + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ taille + log(poids) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + log(poids) + pb(log(age))"),
+  list(mu = neg_xrs_5_tot ~ pb(log(taille) + poids) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "pb(log(taille) + poids) + pb(log(age))")
+)
+
+# 3. Cross-validation config
+K <- 5
+folds <- sample(rep(1:K, length.out = nrow(train_data)))
+
+# 4. Run CV + evaluation with SD for GAIC
+results <- pblapply(model_list, function(m) {
+  gaic_values <- numeric(K)
+  
+  for (k in 1:K) {
+    train_fold <- train_data[folds != k, ]
+    valid_fold <- train_data[folds == k, ]
+    
+    fit_cv <- tryCatch({
+      gamlss(formula = m$mu,
+             sigma.formula = m$sigma,
+             nu.formula = m$nu,
+             family = BCCG(mu.link = "log"),
+             data = train_fold,
+             trace = FALSE)
+    }, error = function(e) NULL)
+    
+    if (!is.null(fit_cv)) {
+      gaic_values[k] <- GAIC(fit_cv)
+    } else {
+      gaic_values[k] <- NA
+    }
+  }
+  
+  # Final model on full training set
+  final_fit <- tryCatch({
+    gamlss(formula = m$mu,
+           sigma.formula = m$sigma,
+           nu.formula = m$nu,
+           family = BCCG(mu.link = "log"),
+           data = train_data,
+           trace = FALSE)
+  }, error = function(e) NULL)
+  
+  # Evaluate on test set
+  if (!is.null(final_fit)) {
+    preds <- predict(final_fit, newdata = test_data, type = "response")
+    actuals <- test_data$neg_xrs_5_tot
+    
+    mse <- mean((actuals - preds)^2, na.rm = TRUE)
+    ss_res <- sum((actuals - preds)^2, na.rm = TRUE)
+    ss_tot <- sum((actuals - mean(actuals, na.rm = TRUE))^2, na.rm = TRUE)
+    r2 <- 1 - ss_res / ss_tot
+    n_test <- sum(!is.na(actuals))
+    p <- length(attr(terms(m$mu), "term.labels"))  # approx number of predictors
+    
+    adj_r2 <- 1 - (1 - r2) * (n_test - 1) / (n_test - p - 1)
+  } else {
+    mse <- NA
+    adj_r2 <- NA
+  }
+  
+  list(
+    Model = m$desc,
+    Mean_GAIC = round(mean(gaic_values, na.rm = TRUE), 2),
+    SD_GAIC = round(sd(gaic_values, na.rm = TRUE), 2),
+    Test_MSE = round(mse, 2),
+    Test_Adj_R2 = round(adj_r2, 2)
+  )
+})
+
+# 5. Save results
+results_df <- do.call(rbind, lapply(results, as.data.frame))
+write.csv(results_df, "gamlss_cv_gaic_mse_r2adj_results_garcons_bccg.csv", row.names = FALSE)
+
+# Show results
+print(results_df)
