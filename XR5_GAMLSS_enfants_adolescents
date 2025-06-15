@@ -1,89 +1,607 @@
+---
+title: "XR5_GAMLSS_clean"
+format: html
+editor: visual
+---
+
+## 
+
+# II. Variables dépendantes (réactances)
+
+```{r}
+df <-  read_csv("/Users/pefura-yone/Documents/These_Hillary/full_hillary_no_outliers_clean.csv")
+data <-  df[, c("age", "sex", "poids", "taille", "xrs_5_tot", "xrs_5_ins", "xrs_5_exp")]
+```
+
+# II.1. variables originales
+
+```{r}
+# Packages nécessaires
+library(ggplot2)
+library(patchwork)
+
+# Fonction pour créer un histogramme avec KDE et une annotation (A–F)
+create_histogram <- function(data, variable, sexe, panel_letter, fill_color, show_x = FALSE, show_y = FALSE, x_label = NULL) {
+  ggplot(data[data$sex == sexe, ], aes_string(x = variable)) +
+    geom_histogram(aes(y = ..density..), fill = fill_color, color = "black", bins = 30) +
+    geom_density(color = "red", size = 1) +
+    annotate("text", x = -Inf, y = Inf, label = panel_letter, hjust = -0.02, vjust = 1.5, size = 3) +
+    theme_minimal(base_size = 10) +
+    theme(
+      axis.title.x = if (show_x) element_text() else element_blank(),
+      axis.title.y = if (show_y) element_text() else element_blank(),
+      axis.line.y = element_line(size = 0.5, colour = "black"),     # Trait Y plus épais
+      axis.line.x = element_line(size = 0.5, colour = "black"),
+      axis.ticks.x = element_line(size = 0.5),
+      axis.ticks.y = element_line(size = 0.5),                        # Ticks Y plus épais
+      axis.text.y = element_text(size = 10)                         # Texte Y lisible
+    ) +
+    labs(x = if (show_x) x_label else NULL, 
+         y = if (show_y) "Densité" else NULL)
+}
+
+# Expressions mathématiques pour les axes x
+xlabel_tot <- expression(Xrs[5] ~ "(cmH"[2]*"O/L/s)")
+xlabel_ins <- expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)")
+xlabel_exp <- expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)")
+
+# Organisation des panels :
+# Ligne 1 : Femmes
+pAX <- create_histogram(data, "xrs_5_tot", "feminin", "A-Filles", "steelblue", show_x = FALSE, show_y = TRUE, x_label = xlabel_tot)
+pBX <- create_histogram(data, "xrs_5_ins", "feminin", "B-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_ins)
+pCX <- create_histogram(data, "xrs_5_exp", "feminin", "C-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_exp)
+
+# Ligne 2 : Hommes
+pDX <- create_histogram(data, "xrs_5_tot", "masculin", "D-Garçons", "steelblue", show_x = TRUE, show_y = TRUE, x_label = xlabel_tot)
+pEX <- create_histogram(data, "xrs_5_ins", "masculin", "E-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_ins)
+pFX <- create_histogram(data, "xrs_5_exp", "masculin", "F-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_exp)
+
+# Affichage dans une grille 3 colonnes x 2 lignes
+(pAX | pBX | pCX) / (pDX | pEX | pFX)
+  
+```
+
+# II.2. Log transformation des réactances (-log(-Xrs)
+
+```{r}
+# Packages nécessaires
+library(ggplot2)
+library(patchwork)
+
+# Appliquer la transformation -log(-x) (à condition que x soit strictement négatif)
+data$neglog_xrs_5_tot <- -log(-data$xrs_5_tot)
+data$neglog_xrs_5_ins <- -log(-data$xrs_5_ins)
+data$neglog_xrs_5_exp <- -log(-data$xrs_5_exp)
+
+# Fonction pour créer un histogramme avec KDE et une annotation
+create_histogram <- function(data, variable, sexe, panel_letter, fill_color, show_x = FALSE, show_y = FALSE, x_label = NULL) {
+  ggplot(data[data$sex == sexe, ], aes_string(x = variable)) +
+    geom_histogram(aes(y = ..density..), fill = fill_color, color = "black", bins = 30) +
+    geom_density(color = "red", size = 1) +
+    annotate("text", x = -Inf, y = Inf, label = panel_letter, hjust = -0.01, vjust = 1.5, size = 3) +
+    theme_minimal(base_size = 10) +
+    theme(
+      axis.title.x = if (show_x) element_text(size = 9) else element_blank(),
+      axis.title.y = if (show_y) element_text(size = 9) else element_blank(),
+      axis.line.y = element_line(size = 0.5, colour = "black"),
+      axis.line.x = element_line(size = 0.5, colour = "black"),
+      axis.ticks.y = element_line(size = 1),
+      axis.text.y = element_text(size = 10),
+      axis.text.x = element_text(size = 10)
+    ) +
+    labs(x = if (show_x) x_label else NULL,
+         y = if (show_y) "Densité" else NULL)
+}
+
+# Noms des axes après transformation -log(-x)
+xlabel_log_tot <- expression(-log(-Xrs[5]) ~ "(cmH"[2]*"O/L/s)")
+xlabel_log_ins <- expression(-log(-Xrs[5]^"insp") ~ "(cmH"[2]*"O/L/s)")
+xlabel_log_exp <- expression(-log(-Xrs[5]^"exp") ~ "(cmH"[2]*"O/L/s)")
+
+# Ligne 1 : Femmes
+pA_logX <- create_histogram(data, "neglog_xrs_5_tot", "feminin", "A-Filles", "steelblue", show_x = FALSE, show_y = TRUE, x_label = xlabel_log_tot)
+pB_logX <- create_histogram(data, "neglog_xrs_5_ins", "feminin", "B-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_log_ins)
+pC_logX <- create_histogram(data, "neglog_xrs_5_exp", "feminin", "C-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_log_exp)
+
+# Ligne 2 : Hommes
+pD_logX <- create_histogram(data, "neglog_xrs_5_tot", "masculin", "D-Garçons", "steelblue", show_x = TRUE, show_y = TRUE, x_label = xlabel_log_tot)
+pE_logX <- create_histogram(data, "neglog_xrs_5_ins", "masculin", "E-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_log_ins)
+pF_logX <- create_histogram(data, "neglog_xrs_5_exp", "masculin", "F-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_log_exp)
+
+# Affichage final en 3x2
+(pA_logX | pB_logX | pC_logX) / (pD_logX | pE_logX | pF_logX)
+
+```
+
+\`
+
+# III/Biometry
+
+# III.1. Variables originales
+
+```{r}
+df <-  read_csv("/Users/pefura-yone/Documents/These_Hillary/full_hillary_no_outliers_clean.csv")
+data <-  df[, c("age", "sex", "poids", "taille", "xrs_5_tot", "xrs_5_ins", "xrs_5_exp")]
+
+```
+
+```{r}
+# Packages nécessaires
+library(ggplot2)
+library(patchwork)
+
+# Fonction pour créer un histogramme avec KDE et une annotation (A–F)
+create_histogram <- function(data, variable, sexe, panel_letter, fill_color, show_x = FALSE, show_y = FALSE, x_label = NULL) {
+  ggplot(data[data$sex == sexe, ], aes_string(x = variable)) +
+    geom_histogram(aes(y = ..density..), fill = fill_color, color = "black", bins = 30) +
+    geom_density(color = "red", size = 1) +
+    annotate("text", x = -Inf, y = Inf, label = panel_letter, hjust = -0.5, vjust = 1.5, size = 3) +
+    theme_minimal(base_size = 10) +
+    theme(
+      axis.title.x = if (show_x) element_text() else element_blank(),
+      axis.title.y = if (show_y) element_text() else element_blank(),
+      axis.line.y = element_line(size = 0.5, colour = "black"),     # Trait Y plus épais
+      axis.line.x = element_line(size = 0.5, colour = "black"),
+      axis.ticks.x = element_line(size = 0.5),
+      axis.ticks.y = element_line(size = 0.5),                        # Ticks Y plus épais
+      axis.text.y = element_text(size = 14),
+      axis.text.x = element_text(size = 10)# Texte Y lisible
+    ) +
+    labs(x = if (show_x) x_label else NULL, 
+         y = if (show_y) "Densité" else NULL)
+}
+
+# Expressions mathématiques pour les axes x
+xlabel_tot <- expression(Xrs[5] ~ "(cmH"[2]*"O/L/s)")
+xlabel_ins <- expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)")
+xlabel_exp <- expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)")
+
+# Organisation des panels :
+# Ligne 1 : Femmes
+pA <- create_histogram(data, "xrs_5_tot", "feminin", "A-Filles", "steelblue", show_x = FALSE, show_y = TRUE, x_label = xlabel_tot)
+pB <- create_histogram(data, "xrs_5_ins", "feminin", "B-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_ins)
+pC <- create_histogram(data, "xrs_5_exp", "feminin", "C-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_exp)
+
+# Ligne 2 : Hommes
+pD <- create_histogram(data, "xrs_5_tot", "masculin", "D-Garçons", "steelblue", show_x = TRUE, show_y = TRUE, x_label = xlabel_tot)
+pE <- create_histogram(data, "xrs_5_ins", "masculin", "E-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_ins)
+pF <- create_histogram(data, "xrs_5_exp", "masculin", "F-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_exp)
+
+# Affichage dans une grille 3 colonnes x 2 lignes
+print("Histogramme des réactances en fonction des paramètres biométriques")
+(pA | pB | pC) / (pD | pE | pF)
+```
+
+```{r}
+
+```
+
+# III.2. Log transformation des prédicteurs
+
+```{r}
+library(ggplot2)
+library(patchwork)
+
+# Transformation log et -log(-y)
+data$log_age <- log(data$age)
+data$log_taille <- log(data$taille)
+data$log_poids <- log(data$poids)
+
+
+# Fonction générale pour créer un histogramme
+create_histogram <- function(data, variable, sexe, panel_letter, fill_color, show_x = FALSE, show_y = FALSE, x_label = NULL) {
+  ggplot(data[data$sex == sexe, ], aes_string(x = variable)) +
+    geom_histogram(aes(y = ..density..), fill = fill_color, color = "black", bins = 30) +
+    geom_density(color = "red", size = 1) +
+    annotate("text", x = -Inf, y = Inf, label = panel_letter, hjust = -0.01, vjust = 1.5, size = 3) +
+    theme_minimal(base_size = 10) +
+    theme(
+      axis.title.x = if (show_x) element_text() else element_blank(),
+      axis.title.y = if (show_y) element_text() else element_blank(),
+      axis.line.y = element_line(size = 0.5, colour = "black"),
+      axis.line.x = element_line(size = 0.5, colour = "black"),
+      axis.ticks.x = element_line(size = 0.5),
+      axis.ticks.y = element_line(size = 0.5),
+      axis.text.y = element_text(size = 12),
+      axis.text.x = element_text(size = 10)
+    ) +
+    labs(x = if (show_x) x_label else NULL,
+         y = if (show_y) "Densité" else NULL)
+}
+
+# Étiquettes mathématiques
+xlabel_age <- expression(log(age))
+xlabel_taille <- expression(log(taille))
+xlabel_poids <- expression(log(poids))
+
+# Ligne 1 : Filles
+pA_log <- create_histogram(data, "log_age", "feminin", "A-Filles", "steelblue", show_x = FALSE, show_y = TRUE, x_label = xlabel_age)
+pB_log <- create_histogram(data, "log_taille", "feminin", "B-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_taille)
+pC_log <- create_histogram(data, "log_poids", "feminin", "C-Filles", "steelblue", show_x = FALSE, show_y = FALSE, x_label = xlabel_poids)
+
+# Ligne 2 : Garçons
+pD_log <- create_histogram(data, "log_age", "masculin", "D-Garçons", "steelblue", show_x = TRUE, show_y = TRUE, x_label = xlabel_age)
+pE_log <- create_histogram(data, "log_taille", "masculin", "E-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_taille)
+pF_log <- create_histogram(data, "log_poids", "masculin", "F-Garçons", "steelblue", show_x = TRUE, show_y = FALSE, x_label = xlabel_poids)
+
+# Affichage final
+(pA_log | pB_log | pC_log) / (pD_log | pE_log | pF_log)
+
+```
+
+# III. Relation entre Xrs et prédicteurs
+
+# III.1. Variables originales
+
+```{r}
+# Couleurs et labels sexe (à adapter selon ton dataset)
+colors <- c("feminin" = "coral", "masculin" = "blue")
+labels <- c("feminin" = "Filles", "masculin" = "Garçons")
+
+# Expressions mathématiques pour les axes y
+y_labels <- list(
+  xrs_5_ins = expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)"),
+  xrs_5_exp = expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)"),
+  xrs_5_tot = expression(Xrs[5] ~ "(cmH"[2]*"O/L/s)")
+)
+
+# Fonction de création de plots
+create_plot <- function(xvar, yvar, show_y = TRUE, show_legend = FALSE, show_x = FALSE) {
+  ggplot(data, aes_string(x = xvar, y = yvar, color = "sex")) +
+    geom_point(size = 0.3) +
+    geom_smooth(method = "loess", se = TRUE, linetype = "solid", linewidth = 0.5) +
+    xlab(if (show_x) switch(xvar,
+                            age = "Âge (années)",
+                            taille = "Taille (cm)",
+                            poids = "Poids (kg)") else NULL) +
+    ylab(if (show_y) y_labels[[yvar]] else NULL) +
+    scale_x_continuous(
+      limits = switch(xvar,
+                      age = c(0, 20),
+                      taille = range(df$taille, na.rm = TRUE),
+                      poids = range(df$poids, na.rm = TRUE)),
+      breaks = switch(xvar,
+                      age = seq(0, 20, 2),
+                      taille = waiver(),
+                      poids = waiver())
+    ) +
+    scale_color_manual(values = colors, name = "Sexe", labels = labels) +
+    theme_classic(base_size = 10) +
+    theme(
+      panel.grid.major = element_line(color = "grey90"),
+      panel.grid.minor = element_blank(),
+      legend.position = if (show_legend) "right" else "none",
+      axis.title.x = if (show_x) element_text(size = 10) else element_blank(),
+      axis.title.y = if (show_y) element_text(size = 10) else element_blank(),
+      axis.line.y = element_line(size = 0.7, colour = "black"),
+      axis.line.x = element_line(size = 0.7, colour = "black"),
+      axis.ticks.y = element_line(size = 1.2),
+      axis.text.x = element_text(size = 8),
+      axis.text.y = element_text(size = 8)
+    )
+}
+
+# Création des 9 figures avec xlab uniquement sur la dernière ligne
+p1 <- create_plot("age", "xrs_5_ins", show_y = TRUE, show_x = FALSE)
+p2 <- create_plot("taille", "xrs_5_ins", show_y = FALSE, show_x = FALSE)
+p3 <- create_plot("poids", "xrs_5_ins", show_y = FALSE, show_x = FALSE)
+
+p4 <- create_plot("age", "xrs_5_exp", show_y = TRUE, show_x = FALSE)
+p5 <- create_plot("taille", "xrs_5_exp", show_y = FALSE, show_x = FALSE)
+p6 <- create_plot("poids", "xrs_5_exp", show_y = FALSE, show_x = FALSE)
+
+p7 <- create_plot("age", "xrs_5_tot", show_y = TRUE, show_x = TRUE)
+p8 <- create_plot("taille", "xrs_5_tot", show_y = FALSE, show_x = TRUE)
+p9 <- create_plot("poids", "xrs_5_tot", show_y = FALSE, show_x = TRUE, show_legend = TRUE)
+
+# Assemblage 3x3 avec légende en bas
+ final_plot2 <- ((p1 | p2 | p3) /
+ (p4 | p5 | p6) /
+ (p7 | p8 | p9)) + 
+  plot_layout(guides = "collect", heights = c(4, 4, 4)) &  # au lieu de c(3,3,3)
+  theme(legend.position = "bottom")
+
+final_plot2
+ggsave("/Users/pefura-yone/Documents/These_Hillary/xrs_plots_3x3.png", final_plot2, width = 7, height = 7, dpi = 500)
+
+```
+
+```{r}
+# Assemblage 3x3 avec légende en bas
+ final_plot2_PP <- 
+ ((p7 | p8 | p9)) + 
+  plot_layout(guides = "collect", heights = c(4, 4, 4)) &  # au lieu de c(3,3,3)
+  theme(legend.position = "bottom")
+
+final_plot2_PP
+ggsave("/Users/pefura-yone/Documents/These_Hillary/xrs_plots_PP.png", final_plot2_PP, width =8, height = 5, dpi = 500)
+
+```
+
+# III.2. Reactances et prédicteurs log transformés
+
+```{r}
+library(ggplot2)
+library(patchwork)
+
+# Préparer les colonnes log-transformées dans df
+data$log_age <- log(data$age)
+data$log_taille <- log(data$taille)
+data$log_poids <- log(data$poids)
+
+# Expressions mathématiques pour les axes y
+y_labels <- list(
+  xrs_5_ins = expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)"),
+  xrs_5_exp = expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)"),
+  xrs_5_tot = expression(Xrs[5] ~ "(cmH"[2]*"O/L/s)")
+)
+
+# Couleurs et labels sexe (à adapter selon ton dataset)
+colors <- c("feminin" = "coral", "masculin" = "blue")
+labels <- c("feminin" = "Filles", "masculin" = "Garçons")
+
+# Fonction de création de plot avec transformation log sur l'axe X
+create_plot <- function(xvar, yvar, show_y = TRUE, show_legend = FALSE, show_x = FALSE) {
+  # Mappage des variables log-transformées
+  x_logvar <- switch(xvar,
+                     age = "log_age",
+                     taille = "log_taille",
+                     poids = "log_poids")
+  
+  # Labels pour les axes X log-transformés
+  xlab_log <- switch(xvar,
+                     age = "log(Âge (années))",
+                     taille = "log(Taille (cm))",
+                     poids = "log(Poids (kg))")
+  
+  ggplot(data, aes_string(x = x_logvar, y = yvar, color = "sex")) +
+    geom_point(size = 0.3, alpha = 0.5) +
+    geom_smooth(method = "loess", se = TRUE, linetype = "solid", linewidth = 0.5) +
+    xlab(if (show_x) xlab_log else NULL) +
+    ylab(if (show_y) y_labels[[yvar]] else NULL) +
+    scale_color_manual(values = colors, name = "Sexe", labels = labels) +
+    theme_classic(base_size = 10) +
+    theme(
+      panel.grid.major = element_line(color = "grey90"),
+      panel.grid.minor = element_blank(),
+      legend.position = if (show_legend) "right" else "none",
+      axis.title.x = if (show_x) element_text(size = 7) else element_blank(),
+      axis.title.y = if (show_y) element_text(size = 7) else element_blank(),
+      axis.line.y = element_line(size = 0.5, colour = "black"),
+      axis.line.x = element_line(size = 0.5, colour = "black"),
+      axis.ticks.y = element_line(size = 1),
+      axis.text.x = element_text(size = 7),
+      axis.text.y = element_text(size = 7)
+    )
+}
+
+# Création des 9 figures avec xlab uniquement sur la dernière ligne
+p1 <- create_plot("age", "xrs_5_ins", show_y = TRUE, show_x = FALSE)
+p2 <- create_plot("taille", "xrs_5_ins", show_y = FALSE, show_x = FALSE)
+p3 <- create_plot("poids", "xrs_5_ins", show_y = FALSE, show_x = FALSE)
+
+p4 <- create_plot("age", "xrs_5_exp", show_y = TRUE, show_x = FALSE)
+p5 <- create_plot("taille", "xrs_5_exp", show_y = FALSE, show_x = FALSE)
+p6 <- create_plot("poids", "xrs_5_exp", show_y = FALSE, show_x = FALSE)
+
+p7 <- create_plot("age", "xrs_5_tot", show_y = TRUE, show_x = TRUE)
+p8 <- create_plot("taille", "xrs_5_tot", show_y = FALSE, show_x = TRUE)
+p9 <- create_plot("poids", "xrs_5_tot", show_y = FALSE, show_x = TRUE, show_legend = TRUE)
+
+# Assemblage 3x3 avec légende en bas
+final_plot2log <- ((p1 | p2 | p3) /
+ (p4 | p5 | p6) /
+ (p7 | p8 | p9)) + 
+  plot_layout(guides = "collect", heights = c(4, 4, 4)) & 
+  theme(legend.position = "bottom")
+
+final_plot2log
+ggsave("/Users/pefura-yone/Documents/These_Hillary/xrs_plots_log3x3.png", final_plot2log, width = 7, height = 7, dpi = 500)
+
+```
+
+# III.3. -log(-Reactances) et prédicteurs log transformés
+
+```{r}
+data$neglog_xrs_5_ins <- -log(-data$xrs_5_ins)
+data$neglog_xrs_5_exp <- -log(-data$xrs_5_exp)
+data$neglog_xrs_5_tot <- -log(-data$xrs_5_tot)
+
+y_labels <- list(
+  neglog_xrs_5_ins = expression(-log(-Xrs[5]^"insp") ~ "(cmH"[2]*"O/L/s)"),
+  neglog_xrs_5_exp = expression(-log(-Xrs[5]^"exp") ~ "(cmH"[2]*"O/L/s)"),
+  neglog_xrs_5_tot = expression(-log(-Xrs[5]) ~ "(cmH"[2]*"O/L/s)")
+)
+
+
+create_plot <- function(xvar, yvar_orig, show_y = TRUE, show_legend = FALSE, show_x = FALSE) {
+  x_logvar <- switch(xvar,
+                     age = "log_age",
+                     taille = "log_taille",
+                     poids = "log_poids")
+  
+  xlab_log <- switch(xvar,
+                     age = "log(Âge (années))",
+                     taille = "log(Taille (cm))",
+                     poids = "log(Poids (kg))")
+  
+  yvar <- paste0("neglog_", yvar_orig)  # ex: xrs_5_ins → neglog_xrs_5_ins
+  
+  ggplot(data, aes_string(x = x_logvar, y = yvar, color = "sex")) +
+    geom_point(size = 0.3, alpha = 0.5) +
+    geom_smooth(method = "loess", se = TRUE, linetype = "solid", linewidth = 0.5) +
+    xlab(if (show_x) xlab_log else NULL) +
+    ylab(if (show_y) y_labels[[yvar]] else NULL) +
+    scale_color_manual(values = colors, name = "Sexe", labels = labels) +
+    theme_classic(base_size = 10) +
+    theme(
+      panel.grid.major = element_line(color = "grey90"),
+      panel.grid.minor = element_blank(),
+      legend.position = if (show_legend) "right" else "none",
+      axis.title.x = if (show_x) element_text(size = 7) else element_blank(),
+      axis.title.y = if (show_y) element_text(size = 7) else element_blank(),
+      axis.line.y = element_line(size = 0.5, colour = "black"),
+      axis.line.x = element_line(size = 0.5, colour = "black"),
+      axis.ticks.y = element_line(size = 1),
+      axis.text.x = element_text(size = 7),
+      axis.text.y = element_text(size = 7)
+    )
+}
+
+p1_log <- create_plot("age", "xrs_5_ins", show_y = TRUE, show_x = FALSE)
+p2_log <- create_plot("taille", "xrs_5_ins", show_y = FALSE, show_x = FALSE)
+p3_log <- create_plot("poids", "xrs_5_ins", show_y = FALSE, show_x = FALSE)
+
+p4_log <- create_plot("age", "xrs_5_exp", show_y = TRUE, show_x = FALSE)
+p5_log <- create_plot("taille", "xrs_5_exp", show_y = FALSE, show_x = FALSE)
+p6_log <- create_plot("poids", "xrs_5_exp", show_y = FALSE, show_x = FALSE)
+
+p7_log <- create_plot("age", "xrs_5_tot", show_y = TRUE, show_x = TRUE)
+p8_log <- create_plot("taille", "xrs_5_tot", show_y = FALSE, show_x = TRUE)
+p9_log <- create_plot("poids", "xrs_5_tot", show_y = FALSE, show_x = TRUE, show_legend = TRUE)
+
+
+final_plot_neglog <- ((p1 | p2 | p3) /
+ (p4 | p5 | p6) /
+ (p7 | p8 | p9)) + 
+  plot_layout(guides = "collect", heights = c(4, 4, 4)) & 
+  theme(legend.position = "bottom")
+
+final_plot_neglog
+ggsave("/Users/pefura-yone/Documents/These_Hillary/xrs_plots_neglog3x3.png", final_plot_neglog, width = 7, height = 7, dpi = 500)
+
+```
+
+```{r}
+# Assemblage 3x3 avec légende en bas
+ final_plot2_log_PP <- 
+ ((p7_log | p8_log | p9_log)) + 
+  plot_layout(guides = "collect", heights = c(4, 4, 4)) &  # au lieu de c(3,3,3)
+  theme(legend.position = "bottom")
+
+final_plot2_log_PP
+ggsave("/Users/pefura-yone/Documents/These_Hillary/xrs_plots_log_PP.png", final_plot2_log_PP, width =8, height = 4, dpi = 500)
+```
+
+# IV. Choix du modèle
+
+# IV.1. Combinaison des prédicteurs
+
+```{r}
+# Girls and boys dataset
+ff <- subset(data, sex == "feminin")
+mm <- subset(data, sex == "masculin")
+print(dim(ff))
+print(dim(mm))
+```
+
+```{r}
+# Validation croisée et evaluation dans l'échantillon test chez les filles
 library(gamlss)
 library(pbapply)
 
 set.seed(123)
 
 # 1. Split data
-n <- nrow(mm)
-train_idx <- sample(seq_len(n), size = floor(0.8 * n))
-train_data <- mm[train_idx, ]
-test_data  <- mm[-train_idx, ]
 
-# 2. Define models (mu = M, sigma = S, nu = L (skewness parameter))
-model_list <- list(
-  list(mu = neg_xrs_5_tot ~ log(taille) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "log(taille) + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ log(taille) + log(poids) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "log(taille) + log(poids) + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ pb(log(taille)) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "pb(log(taille)) + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ pb(log(taille)) + pb(log(poids)) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "pb(log(taille)) + pb(log(poids)) + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ log(taille) + log(poids) + log(age), sigma = ~ 1, nu = ~ 1, desc = "log(taille) + log(poids) + log(age)"),
-  list(mu = neg_xrs_5_tot ~ taille + poids + log(age), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + poids + log(age)"),
-  list(mu = neg_xrs_5_tot ~ taille + poids + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + poids + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ taille + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ poids + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "poids + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ pb(taille) + pb(age), sigma = ~ pb(age), nu = ~ 1, desc = "pb(taille) + pb(age)"),
-  list(mu = neg_xrs_5_tot ~ pb(taille) + pb(poids) + pb(age), sigma = ~ pb(age), nu = ~ 1, desc = "pb(taille) + pb(poids) + pb(age)"),
-  list(mu = neg_xrs_5_tot ~ taille + poids + age, sigma = ~ 1, nu = ~ 1, desc = "taille + poids + age"),
-  list(mu = neg_xrs_5_tot ~ log(taille) + poids + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "log(taille) + poids + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ taille + log(poids) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "taille + log(poids) + pb(log(age))"),
-  list(mu = neg_xrs_5_tot ~ pb(log(taille) + poids) + pb(log(age)), sigma = ~ pb(log(age)), nu = ~ 1, desc = "pb(log(taille) + poids) + pb(log(age))")
+n <- nrow(ff)
+train_idx <- sample(seq_len(n), size = floor(0.8 * n))
+train_data <- ff[train_idx, ]
+test_data  <- ff[-train_idx, ]
+
+# 2. Define all combinations of predictors
+predictor_combinations <- list(
+  list(mu = ~ age, desc = "age"),
+  list(mu = ~ taille, desc = "taille"),
+  list(mu = ~ poids, desc = "poids"),
+  list(mu = ~ age + taille, desc = "age + taille"),
+  list(mu = ~ age + poids, desc = "age + poids"),
+  list(mu = ~ taille + poids, desc = "taille + poids"),
+  list(mu = ~ age + taille + poids, desc = "age + taille + poids"),
+  list(mu = ~ log(age), desc = "log(age)"),
+  list(mu = ~ log(taille), desc = "log(taille)"),
+  list(mu = ~ log(poids), desc = "log(poids)"),
+  list(mu = ~ log(age) + log(taille), desc = "log(age) + log(taille)"),
+  list(mu = ~ log(age) + log(poids), desc = "log(age) + log(poids)"),
+  list(mu = ~ log(taille) + log(poids), desc = "log(taille) + log(poids)"),
+  list(mu = ~ log(age) + log(taille) + log(poids), desc = "log(age) + log(taille) + log(poids)"),
+  list(mu = ~ log(taille) + pb(log(age)),desc = "log(taille) + pb(log(age))"),
+  list(mu = ~ taille + log(poids) + pb(log(age)),desc = "taille + log(poids) + pb(log(age))")
 )
 
-# 3. Cross-validation config
+# 3. Build model list with full SHASH specification
+model_list_shash <- lapply(predictor_combinations, function(pred) {
+  list(
+    mu = as.formula(paste("xrs_5_tot", deparse(pred$mu))),
+    sigma = ~ pb(log(age)),
+    nu = ~ pb(log(age)),
+    tau = ~ 1,
+    desc = paste(pred$desc, "with SHASH")
+  )
+})
+
+# 4. K-Fold CV setup
 K <- 5
 folds <- sample(rep(1:K, length.out = nrow(train_data)))
 
-# 4. Run CV + evaluation with SD for GAIC
-results <- pblapply(model_list, function(m) {
+# 5. Run CV and evaluation
+results_shash <- pblapply(model_list_shash, function(m) {
   gaic_values <- numeric(K)
-  
+
   for (k in 1:K) {
     train_fold <- train_data[folds != k, ]
     valid_fold <- train_data[folds == k, ]
-    
+
     fit_cv <- tryCatch({
-      gamlss(formula = m$mu,
-             sigma.formula = m$sigma,
-             nu.formula = m$nu,
-             family = BCCG(mu.link = "log"),
-             data = train_fold,
-             trace = FALSE)
+      gamlss(
+        formula = m$mu,
+        sigma.formula = m$sigma,
+        nu.formula = m$nu,
+        tau.formula = m$tau,
+        family = SHASH,
+        data = train_fold,
+        n.cyc = 200,
+        trace = FALSE
+      )
     }, error = function(e) NULL)
-    
+
     if (!is.null(fit_cv)) {
       gaic_values[k] <- GAIC(fit_cv)
     } else {
       gaic_values[k] <- NA
     }
   }
-  
+
   # Final model on full training set
   final_fit <- tryCatch({
-    gamlss(formula = m$mu,
-           sigma.formula = m$sigma,
-           nu.formula = m$nu,
-           family = BCCG(mu.link = "log"),
-           data = train_data,
-           trace = FALSE)
+    gamlss(
+      formula = m$mu,
+      sigma.formula = m$sigma,
+      nu.formula = m$nu,
+      tau.formula = m$tau,
+      family = SHASH,
+      data = train_data,
+      n.cyc = 200,
+      trace = FALSE
+    )
   }, error = function(e) NULL)
-  
-  # Evaluate on test set
+
   if (!is.null(final_fit)) {
     preds <- predict(final_fit, newdata = test_data, type = "response")
-    actuals <- test_data$neg_xrs_5_tot
-    
+    actuals <- test_data$xrs_5_tot
+
     mse <- mean((actuals - preds)^2, na.rm = TRUE)
     ss_res <- sum((actuals - preds)^2, na.rm = TRUE)
     ss_tot <- sum((actuals - mean(actuals, na.rm = TRUE))^2, na.rm = TRUE)
     r2 <- 1 - ss_res / ss_tot
     n_test <- sum(!is.na(actuals))
-    p <- length(attr(terms(m$mu), "term.labels"))  # approx number of predictors
-    
+    p <- length(attr(terms(m$mu), "term.labels"))
     adj_r2 <- 1 - (1 - r2) * (n_test - 1) / (n_test - p - 1)
   } else {
     mse <- NA
     adj_r2 <- NA
   }
-  
+
   list(
     Model = m$desc,
     Mean_GAIC = round(mean(gaic_values, na.rm = TRUE), 2),
@@ -93,9 +611,1738 @@ results <- pblapply(model_list, function(m) {
   )
 })
 
-# 5. Save results
-results_df <- do.call(rbind, lapply(results, as.data.frame))
-write.csv(results_df, "gamlss_cv_gaic_mse_r2adj_results_garcons_bccg.csv", row.names = FALSE)
+# 6. Results table
+results_df_shash_filles <- do.call(rbind, lapply(results_shash, as.data.frame))
+write.csv(results_df_shash_filles, "gamlss_shash_cv_results_all_combinations_filles.csv", row.names = FALSE)
+print(results_df_shash_filles)
+
+```
+
+```{r}
+# Validation croisée et evaluation dans l'échantillon test chez les garçons
+library(gamlss)
+library(pbapply)
+
+set.seed(123)
+
+# 1. Split data
+
+n <- nrow(mm)
+train_idx <- sample(seq_len(n), size = floor(0.8 * n))
+train_data <- mm[train_idx, ]
+test_data  <- mm[-train_idx, ]
+
+# 2. Define all combinations of predictors
+predictor_combinations <- list(
+  list(mu = ~ age, desc = "age"),
+  list(mu = ~ taille, desc = "taille"),
+  list(mu = ~ poids, desc = "poids"),
+  list(mu = ~ age + taille, desc = "age + taille"),
+  list(mu = ~ age + poids, desc = "age + poids"),
+  list(mu = ~ taille + poids, desc = "taille + poids"),
+  list(mu = ~ age + taille + poids, desc = "age + taille + poids"),
+  list(mu = ~ log(age), desc = "log(age)"),
+  list(mu = ~ log(taille), desc = "log(taille)"),
+  list(mu = ~ log(poids), desc = "log(poids)"),
+  list(mu = ~ log(age) + log(taille), desc = "log(age) + log(taille)"),
+  list(mu = ~ log(age) + log(poids), desc = "log(age) + log(poids)"),
+  list(mu = ~ log(taille) + log(poids), desc = "log(taille) + log(poids)"),
+  list(mu = ~ log(age) + log(taille) + log(poids), desc = "log(age) + log(taille) + log(poids)"), 
+  list(mu = ~ log(taille) + pb(log(age)),desc = "log(taille) + pb(log(age))"),
+  list(mu = ~ taille + log(poids) + pb(log(age)),desc = "taille + log(poids) + pb(log(age))")
+)
+
+# 3. Build model list with full SHASH specification
+model_list_shash <- lapply(predictor_combinations, function(pred) {
+  list(
+    mu = as.formula(paste("xrs_5_tot", deparse(pred$mu))),
+    sigma = ~ pb(log(age)),
+    nu = ~ pb(log(age)),
+    tau = ~ 1,
+    desc = paste(pred$desc, "with SHASH")
+  )
+})
+
+# 4. K-Fold CV setup
+K <- 5
+folds <- sample(rep(1:K, length.out = nrow(train_data)))
+
+# 5. Run CV and evaluation
+results_shash <- pblapply(model_list_shash, function(m) {
+  gaic_values <- numeric(K)
+
+  for (k in 1:K) {
+    train_fold <- train_data[folds != k, ]
+    valid_fold <- train_data[folds == k, ]
+
+    fit_cv <- tryCatch({
+      gamlss(
+        formula = m$mu,
+        sigma.formula = m$sigma,
+        nu.formula = m$nu,
+        tau.formula = m$tau,
+        family = SHASH,
+        data = train_fold,
+        n.cyc = 200,
+        trace = FALSE
+      )
+    }, error = function(e) NULL)
+
+    if (!is.null(fit_cv)) {
+      gaic_values[k] <- GAIC(fit_cv)
+    } else {
+      gaic_values[k] <- NA
+    }
+  }
+
+  # Final model on full training set
+  final_fit <- tryCatch({
+    gamlss(
+      formula = m$mu,
+      sigma.formula = m$sigma,
+      nu.formula = m$nu,
+      tau.formula = m$tau,
+      family = SHASH,
+      data = train_data,
+      n.cyc = 200,
+      trace = FALSE
+    )
+  }, error = function(e) NULL)
+
+  if (!is.null(final_fit)) {
+    preds <- predict(final_fit, newdata = test_data, type = "response")
+    actuals <- test_data$xrs_5_tot
+
+    mse <- mean((actuals - preds)^2, na.rm = TRUE)
+    ss_res <- sum((actuals - preds)^2, na.rm = TRUE)
+    ss_tot <- sum((actuals - mean(actuals, na.rm = TRUE))^2, na.rm = TRUE)
+    r2 <- 1 - ss_res / ss_tot
+    n_test <- sum(!is.na(actuals))
+    p <- length(attr(terms(m$mu), "term.labels"))
+    adj_r2 <- 1 - (1 - r2) * (n_test - 1) / (n_test - p - 1)
+  } else {
+    mse <- NA
+    adj_r2 <- NA
+  }
+
+  list(
+    Model = m$desc,
+    Mean_GAIC = round(mean(gaic_values, na.rm = TRUE), 2),
+    SD_GAIC = round(sd(gaic_values, na.rm = TRUE), 2),
+    Test_MSE = round(mse, 2),
+    Test_Adj_R2 = round(adj_r2, 2)
+  )
+})
+
+# 6. Results table
+results_df_shash_garcons <- do.call(rbind, lapply(results_shash, as.data.frame))
+write.csv(results_df_shash_garcons, "gamlss_shash_cv_results_all_combinations_garçons.csv", row.names = FALSE)
+print(results_df_shash_garcons)
+
+```
+
+# IV.2. Meilleur modèle avec log(age) + pb(log(age))
+
+```{r}
+mod_tau_const <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  
+  tau.fo = ~ 1,  # constant tau
+  family = SHASH,
+  data = ff,
+  n.cyc = 200
+)
+mod_tau_var <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  
+  tau.fo = ~ pb(log(age)),  # varying tau
+  family = SHASH,
+  data = ff,
+  n.cyc = 200
+)
+
+mod_no_tau <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),
+  family = SHASHo,  # SHASHo omits tau
+  data = ff,
+  n.cyc = 200
+)
+
+GAIC(mod_tau_const, mod_tau_var, mod_no_tau)
+
+```
+
+```{r}
+mod_tau_const <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  
+  tau.fo = ~ 1,  # constant tau
+  family = SHASH,
+  data = mm,
+  n.cyc = 200
+)
+mod_tau_var <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  
+  tau.fo = ~ pb(log(age)),  # varying tau
+  family = SHASH,
+  data = mm,
+  n.cyc = 200
+)
+
+mod_no_tau <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),
+  family = SHASHo,  # SHASHo omits tau
+  data = mm,
+  n.cyc = 200
+)
+
+GAIC(mod_tau_const, mod_tau_var, mod_no_tau)
+
+```
+
+# IV.3. Validation croisée et évaluation finale 
+
+```{r}
+# CHEZ LES FILLES
+library(gamlss)
+library(pbapply)
+
+set.seed(42)
+
+# Shuffle dataset
+ff <- ff[sample(nrow(ff)), ]
+
+# Create 5 folds
+K <- 5
+n <- nrow(ff)
+folds <- sample(rep(1:K, length.out = n))
+
+# Response variables to model
+response_vars <- c("xrs_5_tot", "xrs_5_ins", "xrs_5_exp")
+
+# Function to apply CV for a single response variable
+cv_gamlss_model <- function(resp_var) {
+  gaic_values <- numeric(K)
+  mse_values <- numeric(K)
+  adj_r2_values <- numeric(K)
+
+  for (k in 1:K) {
+    train_data <- ff[folds != k, ]
+    valid_data <- ff[folds == k, ]
+
+    vars <- c(resp_var, "taille", "age")
+    train_data <- train_data[complete.cases(train_data[, vars]), ]
+    valid_data <- valid_data[complete.cases(valid_data[, vars]), ]
+
+    fit <- tryCatch({
+      gamlss(
+        as.formula(paste(resp_var, "~ log(taille) + pb(log(age))")),
+        sigma.fo = ~ pb(log(age)),
+        nu.fo = ~ pb(log(age)),
+        tau.fo = ~ 1,
+        family = SHASH,
+        data = train_data,
+        n.cyc = 200,
+        trace = FALSE
+      )
+    }, error = function(e) NULL)
+
+    if (!is.null(fit) && nrow(valid_data) > 0) {
+      preds <- tryCatch({
+        predict(fit, newdata = valid_data, type = "response")
+      }, error = function(e) rep(NA, nrow(valid_data)))
+
+      actuals <- valid_data[[resp_var]]
+      mse_values[k] <- mean((actuals - preds)^2, na.rm = TRUE)
+
+      ss_res <- sum((actuals - preds)^2, na.rm = TRUE)
+      ss_tot <- sum((actuals - mean(actuals, na.rm = TRUE))^2, na.rm = TRUE)
+      r2 <- 1 - ss_res / ss_tot
+      n_valid <- sum(!is.na(actuals))
+      p <- 2  # log(taille) and pb(log(age))
+      adj_r2_values[k] <- 1 - (1 - r2) * (n_valid - 1) / (n_valid - p - 1)
+      gaic_values[k] <- GAIC(fit)
+    } else {
+      mse_values[k] <- NA
+      adj_r2_values[k] <- NA
+      gaic_values[k] <- NA
+    }
+  }
+
+  data.frame(
+    Variable = resp_var,
+    Mean_GAIC = round(mean(gaic_values, na.rm = TRUE), 2),
+    SD_GAIC = round(sd(gaic_values, na.rm = TRUE), 2),
+    Mean_MSE = round(mean(mse_values, na.rm = TRUE), 2),
+    Mean_Adj_R2 = round(mean(adj_r2_values*100, na.rm = TRUE), 2)
+  )
+}
+
+# Apply CV function to each response variable
+results_all <- pblapply(response_vars, cv_gamlss_model)
+results_df <- do.call(rbind, results_all)
 
 # Show results
 print(results_df)
+
+
+
+```
+
+```{r}
+#CHEZ LES GARCONS
+
+library(gamlss)
+library(pbapply)
+
+set.seed(42)
+
+# Variables à tester
+response_vars <- c("xrs_5_tot", "xrs_5_ins", "xrs_5_exp")
+
+# Shuffle des données garçons
+mm <- mm[sample(nrow(mm)), ]
+
+# Paramètres de validation croisée
+K <- 5
+n <- nrow(mm)
+folds <- sample(rep(1:K, length.out = n))
+
+# Résultats globaux
+results_all <- list()
+
+for (resp_var in response_vars) {
+  gaic_values <- numeric(K)
+  mse_values <- numeric(K)
+  adj_r2_values <- numeric(K)
+
+  vars <- c(resp_var, "taille", "age")
+
+  for (k in 1:K) {
+    train_data <- mm[folds != k, ]
+    valid_data <- mm[folds == k, ]
+
+    # Supprimer les lignes avec NA
+    train_data <- train_data[complete.cases(train_data[, vars]), ]
+    valid_data <- valid_data[complete.cases(valid_data[, vars]), ]
+
+    fit <- tryCatch({
+      gamlss(
+        as.formula(paste(resp_var, "~ log(taille) + pb(log(age))")),
+        sigma.fo = ~ pb(log(age)),
+        nu.fo = ~ pb(log(age)),
+        tau.fo = ~ 1,
+        family = SHASH,
+        data = train_data,
+        n.cyc = 200,
+        trace = FALSE
+      )
+    }, error = function(e) NULL)
+
+    if (!is.null(fit) && nrow(valid_data) > 0) {
+      preds <- tryCatch({
+        predict(fit, newdata = valid_data, type = "response")
+      }, error = function(e) rep(NA, nrow(valid_data)))
+
+      actuals <- valid_data[[resp_var]]
+
+      if (all(is.na(preds)) || all(is.na(actuals))) {
+        mse_values[k] <- NA
+        adj_r2_values[k] <- NA
+        gaic_values[k] <- NA
+      } else {
+        # MSE
+        mse_values[k] <- mean((actuals - preds)^2, na.rm = TRUE)
+
+        # R² ajusté
+        ss_res <- sum((actuals - preds)^2, na.rm = TRUE)
+        ss_tot <- sum((actuals - mean(actuals, na.rm = TRUE))^2, na.rm = TRUE)
+        r2 <- 1 - ss_res / ss_tot
+
+        n_valid <- sum(!is.na(actuals))
+        p <- 2  # log(taille) + pb(log(age))
+        adj_r2 <- if (n_valid > p + 1) {
+          1 - (1 - r2) * (n_valid - 1) / (n_valid - p - 1)
+        } else {
+          NA
+        }
+
+        adj_r2_values[k] <- adj_r2
+        gaic_values[k] <- GAIC(fit)
+      }
+    } else {
+      mse_values[k] <- NA
+      adj_r2_values[k] <- NA
+      gaic_values[k] <- NA
+    }
+  }
+
+  # Stocker les résultats
+  results_all[[resp_var]] <- data.frame(
+    Variable = resp_var,
+    Mean_GAIC = round(mean(gaic_values, na.rm = TRUE), 2),
+    SD_GAIC = round(sd(gaic_values, na.rm = TRUE), 2),
+    Mean_MSE = round(mean(mse_values, na.rm = TRUE), 2),
+    Mean_Adj_R2 = round(mean(adj_r2_values*100, na.rm = TRUE), 2)
+  )
+}
+
+# Résumé final
+results_cv_boys <- do.call(rbind, results_all)
+print(results_cv_boys)
+
+
+```
+
+# V.  Modèles finaux
+
+# V.1. Chez les filles
+
+## V.1.1. Xrs5 totale des filles
+
+```{r}
+# BEST SHASH model. 
+mod_nu_log <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  # Varying skewness
+  tau.fo = ~ 1,
+  family = SHASH,
+  data = ff,
+  n.cyc = 200
+)
+
+summary(mod_nu_log)
+
+# Assume ff (your original data) and mod_nu_log (your fitted SHASH model) exist.
+# Fit ff.taille model 
+ff.taille <- gamlss(taille ~ pb(log(age)),
+                    sigma.fo = ~ pb(log(age)),
+                    family = NO,
+                    data = ff, # Ensure data is specified here
+                    n.cyc = 200) # Added n.cyc for consistency, adjust if needed
+
+# Step 2: Create prediction grid for age and predict taille
+p <- data.frame(age = seq(3, 20, by = 0.25))
+# When predicting taille, p only has 'age'.
+# 'data = ff' provides context for pb(log(age)) from ff.taille's fitting.
+p$taille <- predict(ff.taille, newdata = p, data = ff)
+# At this point, p has columns: "age", "taille"
+
+# Create a dataframe that *only* contains the predictor variables needed by mod_nu_log.
+# mod_nu_log uses 'age' and 'taille'.
+predictors_for_mod_nu_log <- p[, c("age", "taille")]
+
+# Step 3: Predict SHASH parameters from your main model
+# Use 'predictors_for_mod_nu_log' as newdata for all predict calls to mod_nu_log.
+# 'data = ff' provides context for pb(log(age)) and log(taille) from mod_nu_log's fitting.
+p$mu    <- predict(mod_nu_log, newdata = predictors_for_mod_nu_log, what = "mu",    data = ff)
+p$sigma <- predict(mod_nu_log, newdata = predictors_for_mod_nu_log, what = "sigma", data = ff)
+p$nu    <- predict(mod_nu_log, newdata = predictors_for_mod_nu_log, what = "nu",    data = ff)
+
+# Tau parameter (SHASH link for tau is log)
+# coef() gives the coefficient on the log-scale. predict() for tau also gives log(tau) LP.
+tau_log_value <- coef(mod_nu_log, what = "tau")["(Intercept)"] # Assuming tau.fo = ~1
+p$tau_log     <- rep(tau_log_value, nrow(p)) # This is log(tau)
+p$tau         <- exp(p$tau_log)             # This is tau on its natural scale
+
+# Step 4: Compute spline-only parts
+# Helper to safely get coefficient names
+get_coef_val <- function(model, param, coef_name_pattern, default_name) {
+  coefs <- coef(model, what = param)
+  actual_name <- grep(coef_name_pattern, names(coefs), value = TRUE)
+  if (length(actual_name) == 1) {
+    return(coefs[actual_name])
+  } else if (default_name %in% names(coefs)) {
+    return(coefs[default_name])
+  } else {
+    warning(paste("Coefficient pattern", coef_name_pattern, "or default", default_name, "not found for parameter", param, ". Check names(coef(model, what='",param,"'))"))
+    return(NA) # Or handle error appropriately
+  }
+}
+
+# For mu: mu_lp = intercept_mu + coef_log.taille * log(taille) + spline_pb(log(age))_mu
+# p$mu contains the full linear predictor for mu.
+log_taille_coef <- get_coef_val(mod_nu_log, "mu", "log\\(taille\\)", "log(taille)")
+log_taille_effect <- log_taille_coef * log(p$taille)
+
+mu_intercept_coef <- get_coef_val(mod_nu_log, "mu", "\\(Intercept\\)", "(Intercept)")
+
+# mu_spline = spline_pb(log(age))_mu = p$mu - intercept_mu - coef_log.taille * log(taille)
+# If you want "spline + intercept": p$mu_spline <- p$mu - log_taille_effect
+# If you want only the "spline effect":
+p$mu_spline <- p$mu - log_taille_effect - mu_intercept_coef
+
+# For sigma: sigma_lp = intercept_sigma + spline_pb(log(age))_sigma
+# p$sigma contains the full linear predictor for log(sigma).
+sigma_intercept_coef <- get_coef_val(mod_nu_log, "sigma", "\\(Intercept\\)", "(Intercept)")
+p$sigma_spline <- p$sigma - sigma_intercept_coef # This is the spline effect for log(sigma)
+
+# For nu: nu_lp = intercept_nu + spline_pb(log(age))_nu
+# p$nu contains the full linear predictor for nu (assuming identity link).
+nu_intercept_coef <- get_coef_val(mod_nu_log, "nu", "\\(Intercept\\)", "(Intercept)")
+p$nu_spline <- p$nu - nu_intercept_coef # This is the spline effect for nu
+
+# Tau is fixed, so no spline component beyond its constant value
+p$tau_spline <- 0 # Or NA, as it's not a spline
+
+# Step 5: Save lookup table
+# Decide what you need: linear predictors (mu, sigma, nu), parameters (exp(sigma), exp(tau), nu), or spline components
+lookup <- p[, c("age", 
+                "mu_spline", "sigma_spline", "nu_spline", "tau_spline")] # Spline components of LPs
+write.csv(lookup, file = "LookupTable_xrs_5_tot_female4_SHASH_corrected.csv", row.names = FALSE)
+
+# Step 6: Plot results (optional)
+# Remember sigma is on log scale, nu often identity, tau on log scale from coef/predict
+plot(p$age, p$taille, type = "l", lwd = 2, col = "blue",
+     xlab = "Age (yr)", ylab = "Predicted height (cm)", main = "Predicted Height")
+
+plot(p$age, p$mu, type = "l", lwd = 2, col = "red",
+     xlab = "Age (yr)", ylab = "Predicted mu (LP for xrs_5_tot)", main = "Predicted mu (Linear Predictor)")
+
+plot(p$age, p$sigma, type = "l", lwd = 2, col = "green",
+     xlab = "Age (yr)", ylab = "Predicted log(sigma) (LP for dispersion)", main = "Predicted log(sigma)")
+# To plot sigma on natural scale: plot(p$age, exp(p$sigma), ...)
+
+plot(p$age, p$nu, type = "l", lwd = 2, col = "purple",
+     xlab = "Age (yr)", ylab = "Predicted nu (LP for skewness)", main = "Predicted nu")
+# Nu for SHASH usually has identity link, so p$nu is nu parameter.
+
+plot(p$age, p$tau, type = "l", lwd = 2, col = "orange",
+     xlab = "Age (yr)", ylab = "Predicted tau (parameter scale)", main = "Predicted tau (Kurtosis)")
+
+# p$tau is already exp(log_tau_value)
+
+# Plot spline components
+plot(p$age, p$mu_spline, type="l", main="Mu Spline Component (age effect)", ylab="Mu Spline")
+plot(p$age, p$sigma_spline, type="l", main="Sigma Spline Component (age effect)", ylab="Sigma Spline (log scale)")
+plot(p$age, p$nu_spline, type="l", main="Nu Spline Component (age effect)", ylab="Nu Spline")
+
+```
+
+## V.1.2. Xrs5 ins des filles
+
+```{r}
+# Modèle SHASH pour xrs_5_ins chez les filles (meilleur modèle)
+mod_nu_log_Xins_ff <- gamlss(
+  xrs_5_ins ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  # Skewness variable
+  tau.fo = ~ 1,
+  family = SHASH,
+  data = ff,
+  n.cyc = 200
+)
+
+summary(mod_nu_log_Xins_ff)
+
+# Modèle taille en fonction de l'âge
+ff.taille <- gamlss(taille ~ pb(log(age)),
+                    sigma.fo = ~ pb(log(age)),
+                    family = NO,
+                    data = ff,
+                    n.cyc = 200)
+
+# Grille de prédiction pour l’âge
+p <- data.frame(age = seq(3, 20, by = 0.25))
+p$taille <- predict(ff.taille, newdata = p, data = ff)
+
+# Variables explicatives nécessaires pour mod_nu_log_Xins_ff
+predictors_for_mod_nu_log <- p[, c("age", "taille")]
+
+# Prédictions des paramètres SHASH
+p$mu    <- predict(mod_nu_log_Xins_ff, newdata = predictors_for_mod_nu_log, what = "mu",    data = ff)
+p$sigma <- predict(mod_nu_log_Xins_ff, newdata = predictors_for_mod_nu_log, what = "sigma", data = ff)
+p$nu    <- predict(mod_nu_log_Xins_ff, newdata = predictors_for_mod_nu_log, what = "nu",    data = ff)
+
+# Tau constant
+tau_log_value <- coef(mod_nu_log_Xins_ff, what = "tau")["(Intercept)"]
+p$tau_log     <- rep(tau_log_value, nrow(p))
+p$tau         <- exp(p$tau_log)
+
+# Fonction utilitaire pour extraire les coefficients
+get_coef_val <- function(model, param, coef_name_pattern, default_name) {
+  coefs <- coef(model, what = param)
+  actual_name <- grep(coef_name_pattern, names(coefs), value = TRUE)
+  if (length(actual_name) == 1) {
+    return(coefs[actual_name])
+  } else if (default_name %in% names(coefs)) {
+    return(coefs[default_name])
+  } else {
+    warning(paste("Coefficient pattern", coef_name_pattern, "or default", default_name, "not found for parameter", param, "."))
+    return(NA)
+  }
+}
+
+# Composantes spline
+log_taille_coef <- get_coef_val(mod_nu_log_Xins_ff, "mu", "log\\(taille\\)", "log(taille)")
+log_taille_effect <- log_taille_coef * log(p$taille)
+
+mu_intercept_coef <- get_coef_val(mod_nu_log_Xins_ff, "mu", "\\(Intercept\\)", "(Intercept)")
+p$mu_spline <- p$mu - log_taille_effect - mu_intercept_coef
+
+sigma_intercept_coef <- get_coef_val(mod_nu_log_Xins_ff, "sigma", "\\(Intercept\\)", "(Intercept)")
+p$sigma_spline <- p$sigma - sigma_intercept_coef
+
+nu_intercept_coef <- get_coef_val(mod_nu_log_Xins_ff, "nu", "\\(Intercept\\)", "(Intercept)")
+p$nu_spline <- p$nu - nu_intercept_coef
+
+p$tau_spline <- 0
+
+# Sauvegarde
+lookup <- p[, c("age", 
+                "mu_spline", "sigma_spline", "nu_spline", "tau_spline")]
+write.csv(lookup, file = "LookupTable_xrs_5_ins_female4_SHASH_corrected.csv", row.names = FALSE)
+
+# Graphiques
+plot(p$age, p$taille, type = "l", lwd = 2, col = "blue",
+     xlab = "Age (yr)", ylab = "Predicted height (cm)", main = "Predicted Height")
+
+plot(p$age, p$mu, type = "l", lwd = 2, col = "red",
+     xlab = "Age (yr)", ylab = "Predicted mu (LP for xrs_5_ins)", main = "Predicted mu (Linear Predictor)")
+
+plot(p$age, p$sigma, type = "l", lwd = 2, col = "green",
+     xlab = "Age (yr)", ylab = "Predicted log(sigma)", main = "Predicted log(sigma)")
+
+plot(p$age, p$nu, type = "l", lwd = 2, col = "purple",
+     xlab = "Age (yr)", ylab = "Predicted nu", main = "Predicted nu")
+
+plot(p$age, p$tau, type = "l", lwd = 2, col = "orange",
+     xlab = "Age (yr)", ylab = "Predicted tau", main = "Predicted tau")
+
+plot(p$age, p$mu_spline, type="l", main="Mu Spline Component (age effect)", ylab="Mu Spline")
+plot(p$age, p$sigma_spline, type="l", main="Sigma Spline Component (age effect)", ylab="Sigma Spline (log scale)")
+plot(p$age, p$nu_spline, type="l", main="Nu Spline Component (age effect)", ylab="Nu Spline")
+
+```
+
+## V.1.3. Xr5 exp des filles
+
+```{r}
+# Modèle SHASH pour xrs_5_exp chez les filles
+mod_nu_log_Xexp_ff <- gamlss(
+  xrs_5_exp ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  # Skewness variable
+  tau.fo = ~ 1,
+  family = SHASH,
+  data = ff,
+  n.cyc = 200
+)
+
+summary(mod_nu_log_Xexp_ff)
+
+# Grille de prédiction pour l’âge
+p <- data.frame(age = seq(3, 20, by = 0.25))
+p$taille <- predict(ff.taille, newdata = p, data = ff)
+
+# Variables explicatives nécessaires
+predictors_for_mod_nu_log <- p[, c("age", "taille")]
+
+# Prédictions
+p$mu    <- predict(mod_nu_log_Xexp_ff, newdata = predictors_for_mod_nu_log, what = "mu",    data = ff)
+p$sigma <- predict(mod_nu_log_Xexp_ff, newdata = predictors_for_mod_nu_log, what = "sigma", data = ff)
+p$nu    <- predict(mod_nu_log_Xexp_ff, newdata = predictors_for_mod_nu_log, what = "nu",    data = ff)
+
+# Tau constant
+tau_log_value <- coef(mod_nu_log_Xexp_ff, what = "tau")["(Intercept)"]
+p$tau_log     <- rep(tau_log_value, nrow(p))
+p$tau         <- exp(p$tau_log)
+
+# Fonction pour extraire les coefficients
+get_coef_val <- function(model, param, coef_name_pattern, default_name) {
+  coefs <- coef(model, what = param)
+  actual_name <- grep(coef_name_pattern, names(coefs), value = TRUE)
+  if (length(actual_name) == 1) {
+    return(coefs[actual_name])
+  } else if (default_name %in% names(coefs)) {
+    return(coefs[default_name])
+  } else {
+    warning(paste("Coefficient pattern", coef_name_pattern, "or default", default_name, "not found for parameter", param, "."))
+    return(NA)
+  }
+}
+
+# Composantes spline
+log_taille_coef <- get_coef_val(mod_nu_log_Xexp_ff, "mu", "log\\(taille\\)", "log(taille)")
+log_taille_effect <- log_taille_coef * log(p$taille)
+
+mu_intercept_coef <- get_coef_val(mod_nu_log_Xexp_ff, "mu", "\\(Intercept\\)", "(Intercept)")
+p$mu_spline <- p$mu - log_taille_effect - mu_intercept_coef
+
+sigma_intercept_coef <- get_coef_val(mod_nu_log_Xexp_ff, "sigma", "\\(Intercept\\)", "(Intercept)")
+p$sigma_spline <- p$sigma - sigma_intercept_coef
+
+nu_intercept_coef <- get_coef_val(mod_nu_log_Xexp_ff, "nu", "\\(Intercept\\)", "(Intercept)")
+p$nu_spline <- p$nu - nu_intercept_coef
+
+p$tau_spline <- 0
+
+lookup <- p[, c("age", 
+                "mu_spline", "sigma_spline", "nu_spline", "tau_spline")]
+write.csv(lookup, file = "LookupTable_xrs_5_exp_female4_SHASH_corrected.csv", row.names = FALSE)
+
+plot(p$age, p$taille, type = "l", lwd = 2, col = "blue",
+     xlab = "Age (yr)", ylab = "Predicted height (cm)", main = "Predicted Height")
+
+plot(p$age, p$mu, type = "l", lwd = 2, col = "red",
+     xlab = "Age (yr)", ylab = "Predicted mu (LP for xrs_5_exp)", main = "Predicted mu (Linear Predictor)")
+
+plot(p$age, p$sigma, type = "l", lwd = 2, col = "green",
+     xlab = "Age (yr)", ylab = "Predicted log(sigma)", main = "Predicted log(sigma)")
+
+plot(p$age, p$nu, type = "l", lwd = 2, col = "purple",
+     xlab = "Age (yr)", ylab = "Predicted nu", main = "Predicted nu")
+
+plot(p$age, p$tau, type = "l", lwd = 2, col = "orange",
+     xlab = "Age (yr)", ylab = "Predicted tau", main = "Predicted tau")
+
+plot(p$age, p$mu_spline, type="l", main="Mu Spline Component (age effect)", ylab="Mu Spline")
+plot(p$age, p$sigma_spline, type="l", main="Sigma Spline Component (age effect)", ylab="Sigma Spline (log scale)")
+plot(p$age, p$nu_spline, type="l", main="Nu Spline Component (age effect)", ylab="Nu Spline")
+
+```
+
+# V.2. Chez les garçons
+
+## V.1.1. Xrs5 totale des garçons
+
+```{r}
+# BEST SHASH model pour les garçons (base mm)
+mod_nu_log_Xrs5_mm <- gamlss(
+  xrs_5_tot ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  # Varying skewness
+  tau.fo = ~ 1,
+  family = SHASH,
+  data = mm,
+  n.cyc = 200
+)
+
+summary(mod_nu_log_Xrs5_mm)
+
+# Modèle pour prédire taille
+mm.taille <- gamlss(taille ~ pb(log(age)),
+                    sigma.fo = ~ pb(log(age)),
+                    family = NO,
+                    data = mm,
+                    n.cyc = 200)
+
+# Grille de prédiction pour l'âge
+p <- data.frame(age = seq(3, 20, by = 0.25))
+p$taille <- predict(mm.taille, newdata = p, data = mm)
+
+# Préparation des variables explicatives pour la prédiction du modèle SHASH
+predictors_for_mod_nu_log_Xrs5_mm <- p[, c("age", "taille")]
+
+# Prédictions des paramètres SHASH
+p$mu    <- predict(mod_nu_log_Xrs5_mm, newdata = predictors_for_mod_nu_log_Xrs5_mm, what = "mu",    data = mm)
+p$sigma <- predict(mod_nu_log_Xrs5_mm, newdata = predictors_for_mod_nu_log_Xrs5_mm, what = "sigma", data = mm)
+p$nu    <- predict(mod_nu_log_Xrs5_mm, newdata = predictors_for_mod_nu_log_Xrs5_mm, what = "nu",    data = mm)
+
+# Tau constant
+tau_log_value <- coef(mod_nu_log_Xrs5_mm, what = "tau")["(Intercept)"]
+p$tau_log     <- rep(tau_log_value, nrow(p))
+p$tau         <- exp(p$tau_log)
+
+# Fonction auxiliaire
+get_coef_val <- function(model, param, coef_name_pattern, default_name) {
+  coefs <- coef(model, what = param)
+  actual_name <- grep(coef_name_pattern, names(coefs), value = TRUE)
+  if (length(actual_name) == 1) {
+    return(coefs[actual_name])
+  } else if (default_name %in% names(coefs)) {
+    return(coefs[default_name])
+  } else {
+    warning(paste("Coefficient pattern", coef_name_pattern, "or default", default_name, "not found for parameter", param, "."))
+    return(NA)
+  }
+}
+
+# Composantes spline
+log_taille_coef <- get_coef_val(mod_nu_log_Xrs5_mm, "mu", "log\\(taille\\)", "log(taille)")
+log_taille_effect <- log_taille_coef * log(p$taille)
+mu_intercept_coef <- get_coef_val(mod_nu_log_Xrs5_mm, "mu", "\\(Intercept\\)", "(Intercept)")
+p$mu_spline <- p$mu - log_taille_effect - mu_intercept_coef
+
+sigma_intercept_coef <- get_coef_val(mod_nu_log_Xrs5_mm, "sigma", "\\(Intercept\\)", "(Intercept)")
+p$sigma_spline <- p$sigma - sigma_intercept_coef
+
+nu_intercept_coef <- get_coef_val(mod_nu_log_Xrs5_mm, "nu", "\\(Intercept\\)", "(Intercept)")
+p$nu_spline <- p$nu - nu_intercept_coef
+
+p$tau_spline <- 0
+
+# Export du tableau de lookup
+lookup <- p[, c("age", 
+                "mu_spline", "sigma_spline", "nu_spline", "tau_spline")]
+write.csv(lookup, file = "LookupTable_xrs_5_tot_male4_SHASH_corrected.csv", row.names = FALSE)
+
+# Graphiques
+plot(p$age, p$taille, type = "l", lwd = 2, col = "blue",
+     xlab = "Âge (ans)", ylab = "Taille prédite (cm)", main = "Taille prédite")
+
+plot(p$age, p$mu, type = "l", lwd = 2, col = "red",
+     xlab = "Âge (ans)", ylab = "Mu prédit (LP)", main = "Mu (prédicteur linéaire)")
+
+plot(p$age, p$sigma, type = "l", lwd = 2, col = "green",
+     xlab = "Âge (ans)", ylab = "log(sigma) prédit", main = "Log(sigma) (dispersion)")
+# Pour l'échelle naturelle : plot(p$age, exp(p$sigma), ...)
+
+plot(p$age, p$nu, type = "l", lwd = 2, col = "purple",
+     xlab = "Âge (ans)", ylab = "Nu prédit", main = "Nu (asymétrie)")
+
+plot(p$age, p$tau, type = "l", lwd = 2, col = "orange",
+     xlab = "Âge (ans)", ylab = "Tau prédit", main = "Tau (kurtosis)")
+
+# Spline uniquement
+plot(p$age, p$mu_spline, type="l", main="Composante spline de Mu", ylab="Spline mu")
+plot(p$age, p$sigma_spline, type="l", main="Composante spline de Sigma", ylab="Spline sigma (log)")
+plot(p$age, p$nu_spline, type="l", main="Composante spline de Nu", ylab="Spline nu")
+
+```
+
+## V.1.2. Xrs5 ins des garçons
+
+```{r}
+# BEST SHASH model pour xrs_5_ins (garçons, base mm)
+mod_nu_log_Xrs5ins_mm <- gamlss(
+  xrs_5_ins ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),  # Varying skewness
+  tau.fo = ~ 1,
+  family = SHASH,
+  data = mm,
+  n.cyc = 200
+)
+
+summary(mod_nu_log_Xrs5ins_mm)
+
+# Modèle pour prédire taille
+mm.taille <- gamlss(taille ~ pb(log(age)),
+                    sigma.fo = ~ pb(log(age)),
+                    family = NO,
+                    data = mm,
+                    n.cyc = 200)
+
+# Grille de prédiction
+p <- data.frame(age = seq(3, 20, by = 0.25))
+p$taille <- predict(mm.taille, newdata = p, data = mm)
+
+# Préparation des prédicteurs
+predictors <- p[, c("age", "taille")]
+
+# Prédictions des paramètres SHASH
+p$mu    <- predict(mod_nu_log_Xrs5ins_mm, newdata = predictors, what = "mu",    data = mm)
+p$sigma <- predict(mod_nu_log_Xrs5ins_mm, newdata = predictors, what = "sigma", data = mm)
+p$nu    <- predict(mod_nu_log_Xrs5ins_mm, newdata = predictors, what = "nu",    data = mm)
+
+# Tau constant
+tau_log_value <- coef(mod_nu_log_Xrs5ins_mm, what = "tau")["(Intercept)"]
+p$tau_log     <- rep(tau_log_value, nrow(p))
+p$tau         <- exp(p$tau_log)
+
+# Fonction auxiliaire
+get_coef_val <- function(model, param, coef_name_pattern, default_name) {
+  coefs <- coef(model, what = param)
+  actual_name <- grep(coef_name_pattern, names(coefs), value = TRUE)
+  if (length(actual_name) == 1) {
+    return(coefs[actual_name])
+  } else if (default_name %in% names(coefs)) {
+    return(coefs[default_name])
+  } else {
+    warning(paste("Coefficient pattern", coef_name_pattern, "or default", default_name, "not found for parameter", param, "."))
+    return(NA)
+  }
+}
+
+# Composantes spline
+log_taille_coef <- get_coef_val(mod_nu_log_Xrs5ins_mm, "mu", "log\\(taille\\)", "log(taille)")
+log_taille_effect <- log_taille_coef * log(p$taille)
+mu_intercept_coef <- get_coef_val(mod_nu_log_Xrs5ins_mm, "mu", "\\(Intercept\\)", "(Intercept)")
+p$mu_spline <- p$mu - log_taille_effect - mu_intercept_coef
+
+sigma_intercept_coef <- get_coef_val(mod_nu_log_Xrs5ins_mm, "sigma", "\\(Intercept\\)", "(Intercept)")
+p$sigma_spline <- p$sigma - sigma_intercept_coef
+
+nu_intercept_coef <- get_coef_val(mod_nu_log_Xrs5ins_mm, "nu", "\\(Intercept\\)", "(Intercept)")
+p$nu_spline <- p$nu - nu_intercept_coef
+
+p$tau_spline <- 0
+
+# Export du tableau de lookup
+lookup <- p[, c("age", 
+                "mu_spline", "sigma_spline", "nu_spline", "tau_spline")]
+write.csv(lookup, file = "LookupTable_xrs_5_ins_male4_SHASH_corrected.csv", row.names = FALSE)
+
+# Graphiques (facultatifs)
+plot(p$age, p$taille, type = "l", lwd = 2, col = "blue",
+     xlab = "Âge (ans)", ylab = "Taille prédite (cm)", main = "Taille prédite")
+
+plot(p$age, p$mu, type = "l", lwd = 2, col = "red",
+     xlab = "Âge (ans)", ylab = "Mu prédit (LP)", main = "Mu (prédicteur linéaire)")
+
+plot(p$age, p$sigma, type = "l", lwd = 2, col = "green",
+     xlab = "Âge (ans)", ylab = "log(sigma) prédit", main = "Log(sigma) (dispersion)")
+
+plot(p$age, p$nu, type = "l", lwd = 2, col = "purple",
+     xlab = "Âge (ans)", ylab = "Nu prédit", main = "Nu (asymétrie)")
+
+plot(p$age, p$tau, type = "l", lwd = 2, col = "orange",
+     xlab = "Âge (ans)", ylab = "Tau prédit", main = "Tau (kurtosis)")
+
+plot(p$age, p$mu_spline, type="l", main="Composante spline de Mu", ylab="Spline mu")
+plot(p$age, p$sigma_spline, type="l", main="Composante spline de Sigma", ylab="Spline sigma (log)")
+plot(p$age, p$nu_spline, type="l", main="Composante spline de Nu", ylab="Spline nu")
+
+```
+
+## V.1.3. Xrs5 exp des garçons
+
+```{r}
+# BEST SHASH model pour xrs_5_exp (garçons, base mm)
+mod_nu_log_Xrs5exp_mm <- gamlss(
+  xrs_5_exp ~ log(taille) + pb(log(age)),
+  sigma.fo = ~ pb(log(age)),
+  nu.fo = ~ pb(log(age)),
+  tau.fo = ~ 1,
+  family = SHASH,
+  data = mm,
+  n.cyc = 200
+)
+
+summary(mod_nu_log_Xrs5exp_mm)
+
+# Modèle pour prédire taille
+mm.taille <- gamlss(taille ~ pb(log(age)),
+                    sigma.fo = ~ pb(log(age)),
+                    family = NO,
+                    data = mm,
+                    n.cyc = 200)
+
+# Grille de prédiction
+p <- data.frame(age = seq(3, 20, by = 0.25))
+p$taille <- predict(mm.taille, newdata = p, data = mm)
+
+# Préparation des prédicteurs
+predictors <- p[, c("age", "taille")]
+
+# Prédictions des paramètres SHASH
+p$mu    <- predict(mod_nu_log_Xrs5exp_mm, newdata = predictors, what = "mu",    data = mm)
+p$sigma <- predict(mod_nu_log_Xrs5exp_mm, newdata = predictors, what = "sigma", data = mm)
+p$nu    <- predict(mod_nu_log_Xrs5exp_mm, newdata = predictors, what = "nu",    data = mm)
+
+# Tau constant
+tau_log_value <- coef(mod_nu_log_Xrs5exp_mm, what = "tau")["(Intercept)"]
+p$tau_log     <- rep(tau_log_value, nrow(p))
+p$tau         <- exp(p$tau_log)
+
+# Fonction auxiliaire
+get_coef_val <- function(model, param, coef_name_pattern, default_name) {
+  coefs <- coef(model, what = param)
+  actual_name <- grep(coef_name_pattern, names(coefs), value = TRUE)
+  if (length(actual_name) == 1) {
+    return(coefs[actual_name])
+  } else if (default_name %in% names(coefs)) {
+    return(coefs[default_name])
+  } else {
+    warning(paste("Coefficient pattern", coef_name_pattern, "or default", default_name, "not found for parameter", param, "."))
+    return(NA)
+  }
+}
+
+# Composantes spline
+log_taille_coef <- get_coef_val(mod_nu_log_Xrs5exp_mm, "mu", "log\\(taille\\)", "log(taille)")
+log_taille_effect <- log_taille_coef * log(p$taille)
+mu_intercept_coef <- get_coef_val(mod_nu_log_Xrs5exp_mm, "mu", "\\(Intercept\\)", "(Intercept)")
+p$mu_spline <- p$mu - log_taille_effect - mu_intercept_coef
+
+sigma_intercept_coef <- get_coef_val(mod_nu_log_Xrs5exp_mm, "sigma", "\\(Intercept\\)", "(Intercept)")
+p$sigma_spline <- p$sigma - sigma_intercept_coef
+
+nu_intercept_coef <- get_coef_val(mod_nu_log_Xrs5exp_mm, "nu", "\\(Intercept\\)", "(Intercept)")
+p$nu_spline <- p$nu - nu_intercept_coef
+
+p$tau_spline <- 0
+
+# Export du tableau de lookup
+lookup <- p[, c("age", 
+                "mu_spline", "sigma_spline", "nu_spline", "tau_spline")]
+write.csv(lookup, file = "LookupTable_xrs_5_exp_male4_SHASH_corrected.csv", row.names = FALSE)
+
+# Graphiques (facultatifs)
+plot(p$age, p$taille, type = "l", lwd = 2, col = "blue",
+     xlab = "Âge (ans)", ylab = "Taille prédite (cm)", main = "Taille prédite")
+
+plot(p$age, p$mu, type = "l", lwd = 2, col = "red",
+     xlab = "Âge (ans)", ylab = "Mu prédit (LP)", main = "Mu (prédicteur linéaire)")
+
+plot(p$age, p$sigma, type = "l", lwd = 2, col = "green",
+     xlab = "Âge (ans)", ylab = "log(sigma) prédit", main = "Log(sigma) (dispersion)")
+
+plot(p$age, p$nu, type = "l", lwd = 2, col = "purple",
+     xlab = "Âge (ans)", ylab = "Nu prédit", main = "Nu (asymétrie)")
+
+plot(p$age, p$tau, type = "l", lwd = 2, col = "orange",
+     xlab = "Âge (ans)", ylab = "Tau prédit", main = "Tau (kurtosis)")
+
+plot(p$age, p$mu_spline, type="l", main="Composante spline de Mu", ylab="Spline mu")
+plot(p$age, p$sigma_spline, type="l", main="Composante spline de Sigma", ylab="Spline sigma (log)")
+plot(p$age, p$nu_spline, type="l", main="Composante spline de Nu", ylab="Spline nu")
+
+```
+
+# VI. Comparaison
+
+## VI.1. Calcul mu prédite chez les filles
+
+```{r}
+# Prédiction de mu pour Xrs5 sur toutes les données de ff
+mod_nu_log_Xrs5_ff  <- mod_nu_log
+mu_pred_ff <- predict(mod_nu_log_Xrs5_ff, newdata = ff, type = "response")
+ff$mu_hat_xrs5  <- mu_pred_ff 
+
+# Prédiction de mu pour xrs_5_ins
+mu_pred_ins <- predict(mod_nu_log_Xins_ff, newdata = ff, type = "response")
+ff$mu_hat_xrs5_ins <- mu_pred_ins  # ajout à la base de données
+
+# Prédiction de mu pour xrs_5_exp
+mu_pred_exp <- predict(mod_nu_log_Xexp_ff, newdata = ff, type = "response")
+ff$mu_hat_xrs5_exp <- mu_pred_exp  # ajout à la base de données
+
+# Affichage des premières lignes pour vérification
+head(ff[, c("mu_hat_xrs5", "mu_hat_xrs5_ins", "mu_hat_xrs5_exp")])
+```
+
+## VI.2. Calcul mu prédite chez les garçons
+
+```{r}
+# Prédiction de mu pour xrs5 sur toutes les données de mm
+
+mu_pred_mm <- predict(mod_nu_log_Xrs5_mm, newdata = mm, type = "response")
+mm$mu_hat_xrs5  <- mu_pred_mm 
+
+# Prédiction de mu pour xrs_5_ins
+mu_pred_ins_mm <- predict(mod_nu_log_Xrs5ins_mm, newdata = mm, type = "response")
+mm$mu_hat_xrs5_ins <- mu_pred_ins_mm  # ajout à la base de données
+
+# Prédiction de mu pour xrs_5_exp
+mu_pred_exp_mm <- predict(mod_nu_log_Xrs5exp_mm, newdata = mm, type = "response")
+mm$mu_hat_xrs5_exp <- mu_pred_exp_mm  # ajout à la base de données
+
+# Affichage des premières lignes pour vérification
+head(mm[, c("mu_hat_xrs5", "mu_hat_xrs5_ins", "mu_hat_xrs5_exp")])
+```
+
+```{r}
+# Supposons : âge = 10 ans, taille = 140 cm
+new_obs <- data.frame(
+  age = 10.6,
+  taille = 154
+)
+
+# Prédiction de la médiane (mu) de la distribution SHASH pour ce sujet
+pred_mu <- predict(mod_nu_log, newdata = new_obs, what = "mu", type = "response")
+pred_sigma <- predict(mod_nu_log, newdata = new_obs, what = "sigma", type = "response")
+pred_nu <- predict(mod_nu_log, newdata = new_obs, what = "nu", type = "response")
+pred_tau <- predict(mod_nu_log, newdata = new_obs, what = "tau", type = "response")
+
+# Affichage des paramètres SHASH prévus pour cet individu
+cat("µ (location):", pred_mu, "\n")
+cat("σ (scale):", pred_sigma, "\n")
+cat("ν (skewness):", pred_nu, "\n")
+cat("τ (kurtosis):", pred_tau, "\n")
+```
+
+## VI.3. Equations internationales
+
+```{r}
+# Equantions canadiennes
+# Calcul de X5_can dans ff selon la formule : 1.1334595 + 0.0084314 × Ht – 0.0000149 × Ht^2
+ff$Xrs5_can <- 10.1972 *(-1.2117906 + (0.0106890 * ff$taille) - (0.0000240 * ff$taille^2))
+# Calcul de Xrs_ins_can dans ff
+ff$Xrs5_ins_can <-  10.1972 * (-1.1369207 + 0.0100999 * ff$taille - 0.0000226 * ff$taille^2)
+# Calcul de Xrs_exp_can dans ff
+ff$Xrs5_exp_can <- 10.1972 * (-1.3452124 + 0.0122179 * ff$taille - 0.0000287 * ff$taille^2)
+
+# Calcul de X5_can dans ff selon la formule : 1.1334595 + 0.0084314 × Ht – 0.0000149 × Ht^2
+mm$Xrs5_can <- 10.1972 * (-1.2117906 + (0.0106890 * mm$taille) - (0.0000240 * mm$taille^2))
+# Calcul de Xrs_ins_can dans ff
+mm$Xrs5_ins_can <- 10.1972 * (-1.1369207 + 0.0100999 * mm$taille - 0.0000226 * mm$taille^2)
+# Calcul de Xrs_exp_can dans ff
+mm$Xrs5_exp_can <- 10.1972 * (-1.3452124 + 0.0122179 * mm$taille - 0.0000287 * mm$taille^2)
+
+
+# Equations indiennes
+# Pour les filles (ff)
+ff$Xrs5_ind <- -6.544 + (0.035 * ff$taille)
+ff$Xrs5ins_ind <- -8.953+ (0.050 * ff$taille)
+ff$Xrs5exp_ind <- -4.438 + (0.022 * ff$taille)
+
+
+# Pour les garçons (mm). −3.868 + (0.018 × ht)
+mm$Xrs5_ind <- -6.182 + (0.039 *mm$taille) - (0.074 *mm$age)
+mm$Xrs5ins_ind <- -8.654 + (0.061 * mm$taille)- (0.144 * mm$age)
+mm$Xrs5exp_ind <- -3.868 + (0.018 * mm$taille)
+
+
+# Equations sud africaines
+ff$Xrs5_sudafr <- 1.1972 * (3.46 - 727* (1/ff$taille))
+
+mm$Xrs5_sudafr <- 1.1972 * (3.46 - 727* (1/mm$taille))
+
+
+# Equations chinoise. 
+ ff$Xrs5_chin  <-  10.1972* (-0.563 + 0.002*ff$taille + 0.006*ff$age)
+ mm$Xrs5_chin  <-  10.1972* (-0.554 + 0.002*mm$taille + 0.007*mm$age)
+ 
+ 
+ # Equations polonaises
+ff$Xrs5_pol  <- 10.1972* (0.0040* ff$taille -  0.762)
+mm$Xrs5_pol  <- 10.1972* (0.0035* mm$taille -  0.699)
+```
+
+## VI. 4. Comparaison chez les filles
+
+```{r}
+# AGE ET TAILLE - FILLES
+library(tidyr)
+library(ggplot2)
+library(patchwork)
+
+# Base filles uniquement
+# Assurez-vous que 'ff' est chargé. Par exemple:
+# ff <- read.csv("votre_fichier_de_donnees_filles.csv") # ou une autre source de données
+if (!exists("ff")) {
+  # Création d'un dataframe ff factice pour l'exemple si ff n'existe pas
+  # REMPLACEZ CECI PAR LE CHARGEMENT DE VOS VRAIES DONNÉES FILLES
+  set.seed(456) # Graine différente pour des données légèrement différentes
+  n_obs_filles <- 100
+  ff <- data.frame(
+    age = runif(n_obs_filles, 5, 18),
+    taille = runif(n_obs_filles, 100, 175), # Peut-être légèrement différent des garçons
+    mu_hat_xrs5 = rnorm(n_obs_filles, 9.5, 1.8), # Valeurs moyennes potentiellement différentes
+    Xrs5_can = rnorm(n_obs_filles, 10.5, 1.8),
+    Xrs5_ind = rnorm(n_obs_filles, 8.5, 1.8),
+    Xrs5_sudafr = rnorm(n_obs_filles, 10, 1.8),
+    Xrs5_chin = rnorm(n_obs_filles, 9, 1.8),
+    Xrs5_pol = rnorm(n_obs_filles, 9.8, 1.8),
+    mu_hat_xrs5_ins = rnorm(n_obs_filles, 11.5, 1.8),
+    Xrs5_ins_can = rnorm(n_obs_filles, 12.5, 1.8),
+    Xrs5ins_ind = rnorm(n_obs_filles, 10.5, 1.8),
+    mu_hat_xrs5_exp = rnorm(n_obs_filles, 7.5, 1.8),
+    Xrs5_exp_can = rnorm(n_obs_filles, 8.5, 1.8),
+    Xrs5exp_ind = rnorm(n_obs_filles, 6.5, 1.8)
+  )
+  message("Un dataframe 'ff' factice a été créé pour l'exécution de l'exemple.")
+}
+ff_filles <- ff
+
+
+# --- Graphiques basés sur l'âge - FILLES ---
+
+# Données longues - courbes totales (pour l'âge)
+ff_long_age <- ff_filles |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5, Xrs5_can, Xrs5_ind, Xrs5_sudafr, Xrs5_chin, Xrs5_pol),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P1f_age <- ggplot(ff_long_age, aes(x = age, y = valeur, color = courbe, fill = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c(
+      "mu_hat_xrs5" = "steelblue", "Xrs5_can" = "darkgreen", "Xrs5_ind" = "coral",
+      "Xrs5_sudafr" = "purple", "Xrs5_chin" = "red", "Xrs5_pol" = "blue"
+    ),
+    labels = c(
+      "mu_hat_xrs5" = "Notre étude (FOT, Cameroun)", "Xrs5_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5_ind" = "De et al. (FOT, Inde)", "Xrs5_sudafr" = "Chaya et al. (custom, Afrique du Sud)",
+      "Xrs5_chin" = "Wu et al. (IOS, Chine)", "Xrs5_pol" = "Nowowiejska et al. (IOS, Pologne)"
+    )
+  ) +
+  scale_fill_manual(
+    values = c(
+      "mu_hat_xrs5" = "lightblue", "Xrs5_can" = "lightgreen", "Xrs5_ind" = "mistyrose",
+      "Xrs5_sudafr" = "plum", "Xrs5_chin" = "darkred", "Xrs5_pol" = "moccasin"
+    ), guide = "none"
+  ) +
+  labs(
+    x = "Âge (années)", y = expression(Xrs[5]~"(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(ff_filles$age, na.rm = TRUE), max(ff_filles$age, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(1, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues inspiratoires (pour l'âge)
+ff_long_ins_age <- ff_filles |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_ins, Xrs5_ins_can, Xrs5ins_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P2f_age <- ggplot(ff_long_ins_age, aes(x = age, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_ins" = "steelblue", "Xrs5_ins_can" = "darkgreen", "Xrs5ins_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_ins" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_ins_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5ins_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Âge (années)", y = expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(ff_filles$age, na.rm = TRUE), max(ff_filles$age, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues expiratoires (pour l'âge)
+ff_long_exp_age <- ff_filles |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_exp, Xrs5_exp_can, Xrs5exp_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P3f_age <- ggplot(ff_long_exp_age, aes(x = age, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_exp" = "steelblue", "Xrs5_exp_can" = "darkgreen", "Xrs5exp_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_exp" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_exp_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5exp_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Âge (années)", y = expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(ff_filles$age, na.rm = TRUE), max(ff_filles$age, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# --- Graphiques basés sur la taille - FILLES ---
+
+# Données longues - courbes totales (pour la taille)
+ff_long_taille <- ff_filles |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5, Xrs5_can, Xrs5_ind, Xrs5_sudafr, Xrs5_chin, Xrs5_pol),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P1f_taille <- ggplot(ff_long_taille, aes(x = taille, y = valeur, color = courbe, fill = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c(
+      "mu_hat_xrs5" = "steelblue", "Xrs5_can" = "darkgreen", "Xrs5_ind" = "coral",
+      "Xrs5_sudafr" = "purple", "Xrs5_chin" = "red", "Xrs5_pol" = "blue"
+    ),
+    labels = c(
+      "mu_hat_xrs5" = "Notre étude (FOT, Cameroun)", "Xrs5_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5_ind" = "De et al. (FOT, Inde)", "Xrs5_sudafr" = "Chaya et al. (custom, Afrique du Sud)",
+      "Xrs5_chin" = "Wu et al. (IOS, Chine)", "Xrs5_pol" = "Nowowiejska et al. (IOS, Pologne)"
+    )
+  ) +
+  scale_fill_manual(
+    values = c(
+      "mu_hat_xrs5" = "lightblue", "Xrs5_can" = "lightgreen", "Xrs5_ind" = "mistyrose",
+      "Xrs5_sudafr" = "plum", "Xrs5_chin" = "darkred", "Xrs5_pol" = "moccasin"
+    ), guide = "none"
+  ) +
+  labs(
+    x = "Taille (cm)", y = expression(Xrs[5]~"(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(ff_filles$taille, na.rm = TRUE), max(ff_filles$taille, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(1, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues inspiratoires (pour la taille)
+ff_long_ins_taille <- ff_filles |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_ins, Xrs5_ins_can, Xrs5ins_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P2f_taille <- ggplot(ff_long_ins_taille, aes(x = taille, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_ins" = "steelblue", "Xrs5_ins_can" = "darkgreen", "Xrs5ins_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_ins" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_ins_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5ins_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Taille (cm)", y = expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(ff_filles$taille, na.rm = TRUE), max(ff_filles$taille, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues expiratoires (pour la taille)
+ff_long_exp_taille <- ff_filles |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_exp, Xrs5_exp_can, Xrs5exp_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P3f_taille <- ggplot(ff_long_exp_taille, aes(x = taille, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_exp" = "steelblue", "Xrs5_exp_can" = "darkgreen", "Xrs5exp_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_exp" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_exp_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5exp_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Taille (cm)", y = expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(ff_filles$taille, na.rm = TRUE), max(ff_filles$taille, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Combiner en 2 colonnes et 3 lignes
+figure_finale_filles <- (P1f_age | P1f_taille) /
+                        (P2f_age | P2f_taille) /
+                        (P3f_age | P3f_taille)
+
+# Afficher la figure
+print(figure_finale_filles)
+
+# Sauvegarde (optionnelle)
+# Décommentez et ajustez le chemin si nécessaire. Notez le changement de nom de fichier.
+ggsave("/Users/pefura-yone/Documents/These_Hillary/comparaion_age_taille_2cols_3lignes_filles.png", figure_finale_filles, width = 10, height = 10, units = "in", dpi = 300)
+```
+
+```{r}
+# Combiner en 2 colonnes et 3 lignes
+figure_finale_red_garçons <- (P1m_age | P1m_taille) 
+
+# Afficher la figure
+print(figure_finale_red_garçons)
+
+ggsave("/Users/pefura-yone/Documents/These_Hillary/comparaion_age_taille_red_garçons.png", figure_finale_red_garçons, width = 10, height = 5, units = "in", dpi = 300)
+
+```
+
+```{r}
+# 3-17 ans pour compatibilité des comparaisons
+ff_subset_3_17 <- subset(ff, age >= 4 & age <=17)
+summary(ff_subset_3_17)
+
+```
+
+## VI.5. Comparaison chez les garçons
+
+```{r}
+# AGE ET TAILLE GARCONS
+library(tidyr)
+library(ggplot2)
+library(patchwork)
+
+# Base garçons uniquement
+# Assurez-vous que 'mm' est chargé. Par exemple:
+# mm <- read.csv("votre_fichier_de_donnees.csv") # ou une autre source de données
+if (!exists("mm")) {
+  # Création d'un dataframe mm factice pour l'exemple si mm n'existe pas
+  # REMPLACEZ CECI PAR LE CHARGEMENT DE VOS VRAIES DONNÉES
+  set.seed(123)
+  n_obs <- 100
+  mm <- data.frame(
+    age = runif(n_obs, 5, 18),
+    taille = runif(n_obs, 100, 180),
+    mu_hat_xrs5 = rnorm(n_obs, 10, 2),
+    Xrs5_can = rnorm(n_obs, 11, 2),
+    Xrs5_ind = rnorm(n_obs, 9, 2),
+    Xrs5_sudafr = rnorm(n_obs, 10.5, 2),
+    Xrs5_chin = rnorm(n_obs, 9.5, 2),
+    Xrs5_pol = rnorm(n_obs, 10.2, 2),
+    mu_hat_xrs5_ins = rnorm(n_obs, 12, 2),
+    Xrs5_ins_can = rnorm(n_obs, 13, 2),
+    Xrs5ins_ind = rnorm(n_obs, 11, 2),
+    mu_hat_xrs5_exp = rnorm(n_obs, 8, 2),
+    Xrs5_exp_can = rnorm(n_obs, 9, 2),
+    Xrs5exp_ind = rnorm(n_obs, 7, 2)
+  )
+  message("Un dataframe 'mm' factice a été créé pour l'exécution de l'exemple.")
+}
+mm_garcons <- mm
+
+
+# --- Graphiques basés sur l'âge ---
+
+# Données longues - courbes totales (pour l'âge)
+mm_long_age <- mm_garcons |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5, Xrs5_can, Xrs5_ind, Xrs5_sudafr, Xrs5_chin, Xrs5_pol),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P1m_age <- ggplot(mm_long_age, aes(x = age, y = valeur, color = courbe, fill = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c(
+      "mu_hat_xrs5" = "steelblue", "Xrs5_can" = "darkgreen", "Xrs5_ind" = "coral",
+      "Xrs5_sudafr" = "purple", "Xrs5_chin" = "red", "Xrs5_pol" = "blue"
+    ),
+    labels = c(
+      "mu_hat_xrs5" = "Notre étude (FOT, Cameroun)", "Xrs5_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5_ind" = "De et al. (FOT, Inde)", "Xrs5_sudafr" = "Chaya et al. (custom, Afrique du Sud)",
+      "Xrs5_chin" = "Wu et al. (IOS, Chine)", "Xrs5_pol" = "Nowowiejska et al. (IOS, Pologne)"
+    )
+  ) +
+  scale_fill_manual(
+    values = c(
+      "mu_hat_xrs5" = "lightblue", "Xrs5_can" = "lightgreen", "Xrs5_ind" = "mistyrose",
+      "Xrs5_sudafr" = "plum", "Xrs5_chin" = "darkred", "Xrs5_pol" = "moccasin"
+    ), guide = "none"
+  ) +
+  labs(
+    x = "Âge (années)", y = expression(Xrs[5]~"(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(mm_garcons$age, na.rm = TRUE), max(mm_garcons$age, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(1, 0.01), # Coin inférieur droit, légèrement décalé du bord
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"), # Fond opaque
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues inspiratoires (pour l'âge)
+mm_long_ins_age <- mm_garcons |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_ins, Xrs5_ins_can, Xrs5ins_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P2m_age <- ggplot(mm_long_ins_age, aes(x = age, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_ins" = "steelblue", "Xrs5_ins_can" = "darkgreen", "Xrs5ins_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_ins" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_ins_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5ins_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Âge (années)", y = expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(mm_garcons$age, na.rm = TRUE), max(mm_garcons$age, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1, colour = "black"),
+    legend.position = c(0.98, 0.02), # Coin inférieur droit, un peu plus centré
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues expiratoires (pour l'âge)
+mm_long_exp_age <- mm_garcons |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_exp, Xrs5_exp_can, Xrs5exp_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P3m_age <- ggplot(mm_long_exp_age, aes(x = age, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_exp" = "steelblue", "Xrs5_exp_can" = "darkgreen", "Xrs5exp_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_exp" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_exp_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5exp_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Âge (années)", y = expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(mm_garcons$age, na.rm = TRUE), max(mm_garcons$age, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# --- Graphiques basés sur la taille ---
+
+# Données longues - courbes totales (pour la taille)
+mm_long_taille <- mm_garcons |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5, Xrs5_can, Xrs5_ind, Xrs5_sudafr, Xrs5_chin, Xrs5_pol),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P1m_taille <- ggplot(mm_long_taille, aes(x = taille, y = valeur, color = courbe, fill = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c(
+      "mu_hat_xrs5" = "steelblue", "Xrs5_can" = "darkgreen", "Xrs5_ind" = "coral",
+      "Xrs5_sudafr" = "purple", "Xrs5_chin" = "red", "Xrs5_pol" = "blue"
+    ),
+    labels = c(
+      "mu_hat_xrs5" = "Notre étude (FOT, Cameroun)", "Xrs5_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5_ind" = "De et al. (FOT, Inde)", "Xrs5_sudafr" = "Chaya et al. (custom, Afrique du Sud)",
+      "Xrs5_chin" = "Wu et al. (IOS, Chine)", "Xrs5_pol" = "Nowowiejska et al. (IOS, Pologne)"
+    )
+  ) +
+  scale_fill_manual(
+    values = c(
+      "mu_hat_xrs5" = "lightblue", "Xrs5_can" = "lightgreen", "Xrs5_ind" = "mistyrose",
+      "Xrs5_sudafr" = "plum", "Xrs5_chin" = "darkred", "Xrs5_pol" = "moccasin"
+    ), guide = "none"
+  ) +
+  labs(
+    x = "Taille (cm)", y = expression(Xrs[5]~"(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(mm_garcons$taille, na.rm = TRUE), max(mm_garcons$taille, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(1, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues inspiratoires (pour la taille)
+mm_long_ins_taille <- mm_garcons |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_ins, Xrs5_ins_can, Xrs5ins_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P2m_taille <- ggplot(mm_long_ins_taille, aes(x = taille, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_ins" = "steelblue", "Xrs5_ins_can" = "darkgreen", "Xrs5ins_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_ins" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_ins_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5ins_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Taille (cm)", y = expression(Xrs[5]^"insp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(mm_garcons$taille, na.rm = TRUE), max(mm_garcons$taille, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Données longues expiratoires (pour la taille)
+mm_long_exp_taille <- mm_garcons |>
+  pivot_longer(
+    cols = c(mu_hat_xrs5_exp, Xrs5_exp_can, Xrs5exp_ind),
+    names_to = "courbe",
+    values_to = "valeur"
+  )
+
+P3m_taille <- ggplot(mm_long_exp_taille, aes(x = taille, y = valeur, color = courbe)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "ps", k = 60), se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("mu_hat_xrs5_exp" = "steelblue", "Xrs5_exp_can" = "darkgreen", "Xrs5exp_ind" = "coral"),
+    labels = c(
+      "mu_hat_xrs5_exp" = "Notre étude (FOT, Cameroun)",
+      "Xrs5_exp_can" = "Ducharme et al. (FOT, Canada)",
+      "Xrs5exp_ind" = "De et al. (FOT, Inde)"
+    )
+  ) +
+  labs(
+    x = "Taille (cm)", y = expression(Xrs[5]^"exp" ~ "(cmH"[2]*"O/L/s)"), color = "Courbes de référence"
+  ) +
+  coord_cartesian(xlim = c(min(mm_garcons$taille, na.rm = TRUE), max(mm_garcons$taille, na.rm = TRUE))) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.text = element_text(size = 10),
+    axis.line.x = element_line(size = 0.5, colour = "black"),
+    axis.line.y = element_line(size = 0.5, colour = "black"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
+    axis.ticks = element_line(size = 1.5, colour = "black"),
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.background = element_rect(fill = "white", color = "white"),
+    legend.spacing.y = unit(0.01, "cm"),
+    legend.title = element_text(),
+    legend.key.size = unit(0.7, "lines"),
+    legend.margin = margin(t = 2, r = 2, b = 2, l = 2)
+  )
+
+# Combiner en 2 colonnes et 3 lignes
+# MODIFICATION PRINCIPALE ICI: suppression de plot_layout(guides = "collect") & theme(...)
+figure_finale <- (P1m_age | P1m_taille) /
+                 (P2m_age | P2m_taille) /
+                 (P3m_age | P3m_taille)
+
+# Afficher la figure
+print(figure_finale)
+
+# Sauvegarde (optionnelle)
+
+ggsave("/Users/pefura-yone/Documents/These_Hillary/comparaion_age_taille_2cols_3lignes_garçons.png", figure_finale, width = 10, height = 10, units = "in", dpi = 300)
+```
+
+```{r}
+mm_subset_3_17 <- subset(mm, age >= 4 & age <=17)
+summary(mm_subset_3_17)
+```
